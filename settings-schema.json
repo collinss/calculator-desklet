@@ -1,0 +1,11 @@
+{
+    "calcStyle": {
+        "type": "radiogroup",
+        "description": "Style",
+        "options": {
+            "4-function": 1,
+            "4-function - RPN": 2
+        },
+        "default": 1
+    }
+}
