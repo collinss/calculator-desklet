@@ -1,10 +1,26 @@
 {
-    "calcStyle": {
+    "angleMode": {
+        "type": "radiogroup",
+        "description": "Angle Measure",
+        "options": {
+            "Degrees": 0,
+            "Radians": 1
+        },
+        "default": 0
+    },
+    
+    "rpn": {
+        "type": "checkbox",
+        "description": "Use Reverse-Polish Notation",
+        "default": false
+    },
+    
+    "layout": {
         "type": "radiogroup",
         "description": "Style",
         "options": {
             "4-function": 1,
-            "4-function - RPN": 2
+            "Scientific": 2
         },
         "default": 1
     }
