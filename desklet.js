@@ -19,12 +19,22 @@ const SIMPLE_LAYOUT = [
 ]
 
 const SCIENTIFIC_LAYOUT = [
-    [{type: "opt1"},              {type: "opt2"},              {value:"INV", type: "execute"}, {value:"M", type: "execute"}, {value:"MR", type: "execute"}, {value:"MC", type: "execute"}],
-    [{type: "opt3"},              {type: "opt4"},              {value:"neg", type: "execute"}, {value:"add", type: "operate"}, {value:"square", type: "execute"}, {value:"sin", type: "execute"}],
-    [{value:"7", type: "append"}, {value:"8", type: "append"}, {value:"9", type: "append"},    {value:"sub", type: "operate"}, {value:"root", type: "operate"}, {value:"cos", type: "execute"}],
-    [{value:"4", type: "append"}, {value:"5", type: "append"}, {value:"6", type: "append"},    {value:"mult", type: "operate"}, {value:"log", type: "execute"}, {value:"tan", type: "execute"}],
-    [{value:"1", type: "append"}, {value:"2", type: "append"}, {value:"3", type: "append"},    {value:"div", type: "operate"}, {value:"ln", type: "execute"},  {value:"x!", type: "execute"}],
-    [{value:"0", type: "append"}, {value:".", type: "append"}, {value:"EXP", type: "execute"}, {value:"=", type: "return"},  {value:"%", type: "execute"},   {value:"pi", type: "execute"}]
+    [{type: "opt1"},              {type: "opt2"},              {value:"inv", type: "updateInv"}, {value:"M", type: "execute"},
+        {value:"MR", type: "execute"}, {value:"MC", type: "execute"}],
+    [{type: "opt3"},              {type: "opt4"},              {value:"neg", type: "execute"}, {value:"add", type: "operate"},
+        {value:"square", type: "execute", inv:{value: "sqrt", type: "operate"}},
+        {value:"sin", type: "operate", inv:{value: "sin-inv", type: "operate"}}],
+    [{value:"7", type: "append"}, {value:"8", type: "append"}, {value:"9", type: "append"},    {value:"sub", type: "operate"},
+        {value:"root", type: "operate", inv:{value: "power", type: "operate"}},
+        {value: "cos", type: "operate", inv:{value: "cos-inv", type: "operate"}}],
+    [{value:"4", type: "append"}, {value:"5", type: "append"}, {value:"6", type: "append"},    {value:"mult", type: "operate"},
+        {value:"log", type: "operate", inv:{value: "10x", type: "operate"}},
+        {value: "tan", type: "operate", inv:{value: "tan-inv", type: "operate"}}],
+    [{value:"1", type: "append"}, {value:"2", type: "append"}, {value:"3", type: "append"},    {value:"div", type: "operate"},
+        {value:"ln", type: "operate", inv:{value: "ex", type: "operate"}},
+        {value: "x!", type: "execute"}],
+    [{value:"0", type: "append"}, {value:".", type: "append"}, {value:"exp", type: "sci"}, {type: "return"},
+        {value:"%", type: "execute"},   {value: "pi", type: "execute"}]
 ]
 
 
@@ -40,20 +50,22 @@ Buffer.prototype = {
         //this.reset();
     },
     
-    reset: function() {
+    reset: function(rpn) {
         this.stack = [""];
+        this.current = 0;
         this.operations = [];
-        this.status = [];
+        this.inv = false;
+        this.rpn = rpn;
     },
     
     updateInv: function() {
-        
+        this.inv = !this.inv;
         this.emit("inv-changed");
     },
     
     append: function(value) {
-        if ( value == "." && (this.info.stack[this.current].indexOf(".") != -1) ) return;
-        this.info.stack[this.current] += value;
+        if ( value == "." && (this.stack[this.current].indexOf(".") != -1) ) return;
+        this.stack[this.current] += value;
         
         this.emit("changed");
     },
@@ -63,10 +75,8 @@ Buffer.prototype = {
             this.execute(value);
             return;
         }
-        //if ( this.operating ) this.solve();
-        //this.operating = true;
-        this.info.operation.push(value);
-        this.info.stack.push("");
+        this.operations.push(value);
+        this.stack.push("");
         this.current++;
         this.emit("changed");
     },
@@ -74,41 +84,41 @@ Buffer.prototype = {
     execute: function(value) {
         switch ( value ) {
             case "%":
-                if ( this.rpn && this.info.stack[this.current] == "" ) this.info.stack[this.current] = String(this.info.stack[this.current]/100);
+                if ( this.rpn && this.stack[this.current] == "" ) this.stack[this.current] = String(this.stack[this.current]/100);
                 break;
             case "neg":
-                if ( this.rpn && this.info.stack[this.current] == "" ) string = this.info.stack[this.current-1];
-                else string = this.info.stack[this.current];
+                if ( this.rpn && this.stack[this.current] == "" && this.current > 0 ) string = this.stack[this.current-1];
+                else string = this.stack[this.current];
                 if ( string[0] == "-" ) string = string.slice(1);
                 else string = "-" + string;
-                if ( this.rpn && this.info.stack[this.current] == "" ) this.info.stack[this.current-1] = string;
-                else this.info.stack[this.current] = string;
+                if ( this.rpn && this.stack[this.current] == "" ) this.stack[this.current-1] = string;
+                else this.stack[this.current] = string;
                 break;
             case "add":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                result = String(Number(this.info.stack.pop()) + Number(this.info.stack.pop()));
-                this.current = this.info.stack.push(result, "") - 1;
+                if ( this.stack[this.current] == "" ) this.stack.pop();
+                if ( this.stack.length < 2 ) return;
+                result = String(Number(this.stack.pop()) + Number(this.stack.pop()));
+                this.current = this.stack.push(result, "") - 1;
                 break;
             case "sub":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                last = Number(this.info.stack.pop());
-                result = String(Number(this.info.stack.pop()) - last);
-                this.current = this.info.stack.push(result, "") - 1;
+                if ( this.stack[this.current] == "" ) this.stack.pop();
+                if ( this.stack.length < 2 ) return;
+                last = Number(this.stack.pop());
+                result = String(Number(this.stack.pop()) - last);
+                this.current = this.stack.push(result, "") - 1;
                 break;
             case "mult":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                result = String(Number(this.info.stack.pop()) * Number(this.info.stack.pop()));
-                this.current = this.info.stack.push(result, "") - 1;
+                if ( this.stack[this.current] == "" ) this.stack.pop();
+                if ( this.stack.length < 2 ) return;
+                result = String(Number(this.stack.pop()) * Number(this.stack.pop()));
+                this.current = this.stack.push(result, "") - 1;
                 break;
             case "div":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                last = Number(this.info.stack.pop());
-                result = String(Number(this.info.stack.pop()) / last);
-                this.current = this.info.stack.push(result, "") - 1;
+                if ( this.stack[this.current] == "" ) this.stack.pop();
+                if ( this.stack.length < 2 ) return;
+                last = Number(this.stack.pop());
+                result = String(Number(this.stack.pop()) / last);
+                this.current = this.stack.push(result, "") - 1;
                 break;
             case "sin":
                 
@@ -118,74 +128,61 @@ Buffer.prototype = {
     },
     
     solve: function(value) {
-        if ( this.info.operation.length == 0 || this.info[this.current] == "" ) return;
+        if ( this.operations.length == 0 || this.stack[this.current] == "" ) return;
         
         let result;
-        let operation = this.info.operation.pop();
+        let operation = this.operations.pop();
         switch ( operation ) {
             case "add":
-                result = String(Number(this.info.stack[this.current-1]) + Number(this.info.stack.pop()));
+                result = String(Number(this.stack[this.current-1]) + Number(this.stack.pop()));
                 break;
             case "sub":
-                result = String(Number(this.info.stack[this.current-1]) - Number(this.info.stack.pop()));
+                result = String(Number(this.stack[this.current-1]) - Number(this.stack.pop()));
                 break;
             case "mult":
-                result = String(Number(this.info.stack[this.current-1]) * Number(this.info.stack.pop()));
+                result = String(Number(this.stack[this.current-1]) * Number(this.stack.pop()));
                 break;
             case "div":
-                result = String(Number(this.info.stack[this.current-1]) / Number(this.info.stack.pop()));
+                result = String(Number(this.stack[this.current-1]) / Number(this.stack.pop()));
                 break;
         }
         this.current--;
-        this.info.stack[this.current] = result;
-        //this.operating = false;
-        //this.info.operation = null;
+        this.stack[this.current] = result;
         
         this.emit("changed");
     },
     
     clear: function(value) {
-        this.info.stack[this.current] = "";
+        this.stack[this.current] = "";
         this.emit("changed");
     },
     
-    //reset: function(value) {
-    //    this.info.stack = [""];
-    //    this.current = 0;
-    //    //this.operating = false;
-    //    this.info.operation = [];
-    //    
-    //    this.display.update(this.info);
-    //},
-    
     push: function(value) {
         //if the user has not entered anything in, we want to duplicate the last entry
-        if ( this.info.stack[this.current] == "" && this.current > 0 )
-            this.info.stack[this.current] = this.info.stack[this.current-1];
-        this.info.stack.push("");
-        this.current = this.info.stack.length - 1;
+        if ( this.stack[this.current] == "" && this.current > 0 )
+            this.stack[this.current] = this.stack[this.current-1];
+        this.stack.push("");
+        this.current = this.stack.length - 1;
         
         this.emit("changed");
     },
     
     del: function(value) {
-        if ( this.info.stack[this.current] == "" ) {
+        if ( this.stack[this.current] == "" ) {
             if ( this.current == 0 ) return;
-            this.info.stack.splice(this.current-1, 1);
+            this.stack.splice(this.current-1, 1);
             this.current--;
         }
-        else this.info.stack[this.current] = this.info.stack[this.current].substring(0, this.info.stack[this.current].length-1);
+        else this.stack[this.current] = this.stack[this.current].substring(0, this.stack[this.current].length-1);
         
         this.emit("changed");
     },
     
     swap: function(value) {
-        if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-        global.log(this.info.stack.length);
-        if ( this.info.stack.length > 1 ) this.info.stack.push(String(this.info.stack.splice(this.info.stack.length-2,1)));
-        global.log(this.info.stack.length);
-        this.info.stack.push("");
-        this.current = this.info.stack.length - 1;
+        if ( this.stack[this.current] == "" ) this.stack.pop();
+        if ( this.stack.length > 1 ) this.stack.push(String(this.stack.splice(this.stack.length-2,1)));
+        this.stack.push("");
+        this.current = this.stack.length - 1;
         
         this.emit("changed");
     },
@@ -219,18 +216,20 @@ DisplayBox.prototype = {
         this.value = new St.Label({ text: "0", style_class: "calc-displayText-primary" });
         box.add_actor(this.value);
         
+        buffer.connect("changed", Lang.bind(this, this.update));
+        
     },
     
-    update: function(info) {
+    update: function() {
         try {
             
-            let last = info.stack.length - 1;
-            let value = info.stack[last];
+            let last = buffer.stack.length - 1;
+            let value = buffer.stack[last];
             if ( value == "" ) value = "0";
             this.value.text = value;
-            if ( info.stack.length > 1 ) this.valuePrev.text = info.stack[last-1];
+            if ( buffer.stack.length > 1 ) this.valuePrev.text = buffer.stack[last-1];
             else this.valuePrev.text = "";
-            if ( info.operation.length > 0 ) this.operation.text = info.operation[info.operation.length-1];
+            if ( buffer.operations.length > 0 ) this.operation.text = buffer.operations[buffer.operations.length-1];
             else this.operation.text = "";
             
         } catch (e) {
@@ -274,15 +273,16 @@ DisplayBoxRPN.prototype = {
         this.buttonUp.connect("clicked", Lang.bind(this, this.navigateUp));
         this.buttonDown.connect("clicked", Lang.bind(this, this.navigateDown));
         
+        buffer.connect("changed", Lang.bind(this, function() { this.update(true); }));
     },
     
-    update: function(info) {
+    update: function(refreshData) {
         try {
             
             this.displayBox.destroy_all_children();
             
-            if ( info ) {
-                this.stack = info.stack.slice(0);
+            if ( refreshData ) {
+                this.stack = buffer.stack.slice(0);
                 for ( let i in this.stack ) 
                     if ( this.stack[i] == "" ) this.stack.splice(i, 1);
                 this.start = this.stack.length - 1;
@@ -319,7 +319,7 @@ DisplayBoxRPN.prototype = {
             this.end--;
         }
         
-        this.update(null);
+        this.update(false);
     },
     
     navigateDown: function() {
@@ -328,49 +328,57 @@ DisplayBoxRPN.prototype = {
             this.end++;
         }
         
-        this.update(null);
+        this.update(false);
     }
 }
 
 
-function Button(calc, info) {
-    this._init(calc, info);
+function Button(info, rpn) {
+    this._init(info, rpn);
 }
 
 Button.prototype = {
-    _init: function(calc, info) {
+    _init: function(info, rpn) {
         
-        this.calc = calc;
         this.info = info;
         
         this.actor = new St.Button({ style_class: "calc-button" });
         
         let type = info.type;
         let text, command;
-        let image = null;
         switch ( type ) {
             case "opt1":
-                image = new St.Icon({ icon_name: "edit-clear", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                if ( this.rpn ) {
+                if ( rpn ) {
+                    let file = Gio.file_new_for_path(button_path + "delete-symbolic.svg");
+                    let gicon = new Gio.FileIcon({ file: file });
+                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                     this.command = "del";
                 }
                 else {
+                this.image = new St.Icon({ icon_name: "edit-clear", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                     this.command = "clear";
                 }
                 break;
             case "opt2":
-                image = new St.Icon({ icon_name: "view-refresh", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                if ( this.rpn ) {
-                    text = _("Swap");
-                    this.command = "swap";
+                //this.image = new St.Icon({ icon_name: "view-refresh", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                this.command = "reset";
+                if ( rpn ) {
+                let file = Gio.file_new_for_path(button_path + "reset-symbolic.svg");
+                let gicon = new Gio.FileIcon({ file: file });
+                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                    
                 }
                 else {
                     text = _("Reset");
-                    this.command = "reset";
                 }
                 break;
             case "opt3":
-                if ( this.rpn ) {
+                if ( rpn ) {
+                    let file = Gio.file_new_for_path(button_path + "swap-symbolic.svg");
+                    let gicon = new Gio.FileIcon({ file: file });
+                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                    text = _("Swap");
+                    this.command = "swap";
                     
                 }
                 else {
@@ -379,8 +387,9 @@ Button.prototype = {
                 }
                 break;
             case "opt4":
-                if ( this.rpn ) {
-                    
+                if ( rpn ) {
+                    text = "";
+                    this.command = "swap";
                 }
                 else {
                     text = ")";
@@ -388,41 +397,50 @@ Button.prototype = {
                 }
                 break;
             case "return":
-                if ( this.rpn ) {
-                    text = _("Enter");
+                if ( rpn ) {
+                    let file = Gio.file_new_for_path(button_path + "return-symbolic.svg");
+                    let gicon = new Gio.FileIcon({ file: file });
+                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                     this.command = "push";
                 }
                 else {
                     let file = Gio.file_new_for_path(button_path + "equal-symbolic.svg");
                     let gicon = new Gio.FileIcon({ file: file });
-                    image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                     this.command = "solve";
                 }
                 break;
             default:
                 let file = Gio.file_new_for_path(button_path + info.value + "-symbolic.svg");
                 let gicon = new Gio.FileIcon({ file: file });
-                image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                 text = info.value;
         }
         
         if ( info.inv ) {
             this.infoInv = info.inv;
-            //connect to signal
+            buffer.connect("inv-changed", Lang.bind(this, this.refresh));
+            let file = Gio.file_new_for_path(button_path + this.infoInv.value + "-symbolic.svg");
+            let gicon = new Gio.FileIcon({ file: file });
+            this.imageInv = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
         }
         
-        if ( image ) this.actor.add_actor(image);
+        if ( this.image ) this.actor.add_actor(this.image);
         else this.actor.label = text;
         
         this.actor.connect("clicked", Lang.bind(this, this.execute));
         
     },
     
+    refresh: function() {
+        if ( buffer.inv ) this.actor.set_child(this.imageInv);
+        else this.actor.set_child(this.image);
+    },
+    
     execute: function() {
         try {
-            
-            if ( this.command ) this.calc[this.command]();
-            else this.calc[this.info.type](this.info.value);
+            if ( this.command ) buffer[this.command]();
+            else buffer[this.info.type](this.info.value);
             
         } catch(e) {
             global.logError(e);
@@ -449,6 +467,8 @@ myDesklet.prototype = {
             this._populateContextMenu();
             
             button_path = this.metadata.path + "/buttons/";
+            
+            buffer = new Buffer();
             
             this._build_interface();
             
@@ -518,10 +538,8 @@ myDesklet.prototype = {
     _build_interface: function() {
         if ( this.mainBox ) this.mainBox.destroy();
         
-        this.info = { stack: [""], operation: [""], status: [""] };
-        //Signals.add_signal_methods(this.info);
-        this.current = 0;
-        //this.operating = false;
+        buffer.reset(this.rpn);
+        
         let layout;
         
         if ( this.rpn ) this.rpnMenuItem.setShowDot(true);
@@ -560,10 +578,7 @@ myDesklet.prototype = {
             for ( let j = 0; j < layout[i].length; j++ ) {
                 buttonInfo = layout[i][j];
                 if ( buttonInfo.type == "empty" ) continue;
-                let button = new Button(this, buttonInfo);
-                //if ( image ) button = new St.Button({ style_class: "calc-button", child: image });
-                //else button = new St.Button({ style_class: "calc-button", label: text });
-                //button.connect("clicked", command);
+                let button = new Button(buttonInfo, this.rpn);
                 buttonTable.pack(button.actor, j, i);
             }
         }
@@ -573,153 +588,6 @@ myDesklet.prototype = {
         this.degMenuItem.setShowDot(this.angleMode == 0);
         this.radMenuItem.setShowDot(this.angleMode == 1);
     },
-    
-    append: function(value) {
-        if ( value == "." && (this.info.stack[this.current].indexOf(".") != -1) ) return;
-        this.info.stack[this.current] += value;
-        
-        this.display.update(this.info);
-    },
-    
-    operate: function(value) {
-        if ( this.rpn ) {
-            this.execute(value);
-            return;
-        }
-        //if ( this.operating ) this.solve();
-        //this.operating = true;
-        this.info.operation.push(value);
-        this.info.stack.push("");
-        this.current++;
-        this.display.update(this.info);
-    },
-    
-    execute: function(value) {
-        switch ( value ) {
-            case "%":
-                if ( this.rpn && this.info.stack[this.current] == "" ) this.info.stack[this.current] = String(this.info.stack[this.current]/100);
-                break;
-            case "neg":
-                if ( this.rpn && this.info.stack[this.current] == "" ) string = this.info.stack[this.current-1];
-                else string = this.info.stack[this.current];
-                if ( string[0] == "-" ) string = string.slice(1);
-                else string = "-" + string;
-                if ( this.rpn && this.info.stack[this.current] == "" ) this.info.stack[this.current-1] = string;
-                else this.info.stack[this.current] = string;
-                break;
-            case "add":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                result = String(Number(this.info.stack.pop()) + Number(this.info.stack.pop()));
-                this.current = this.info.stack.push(result, "") - 1;
-                break;
-            case "sub":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                last = Number(this.info.stack.pop());
-                result = String(Number(this.info.stack.pop()) - last);
-                this.current = this.info.stack.push(result, "") - 1;
-                break;
-            case "mult":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                result = String(Number(this.info.stack.pop()) * Number(this.info.stack.pop()));
-                this.current = this.info.stack.push(result, "") - 1;
-                break;
-            case "div":
-                if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-                if ( this.info.stack.length < 2 ) return;
-                last = Number(this.info.stack.pop());
-                result = String(Number(this.info.stack.pop()) / last);
-                this.current = this.info.stack.push(result, "") - 1;
-                break;
-            case "sin":
-                
-        }
-        
-        this.display.update(this.info);
-    },
-    
-    solve: function(value) {
-        if ( this.info.operation.length == 0 || this.info[this.current] == "" ) return;
-        
-        let result;
-        let operation = this.info.operation.pop();
-        switch ( operation ) {
-            case "add":
-                result = String(Number(this.info.stack[this.current-1]) + Number(this.info.stack.pop()));
-                break;
-            case "sub":
-                result = String(Number(this.info.stack[this.current-1]) - Number(this.info.stack.pop()));
-                break;
-            case "mult":
-                result = String(Number(this.info.stack[this.current-1]) * Number(this.info.stack.pop()));
-                break;
-            case "div":
-                result = String(Number(this.info.stack[this.current-1]) / Number(this.info.stack.pop()));
-                break;
-        }
-        this.current--;
-        this.info.stack[this.current] = result;
-        //this.operating = false;
-        //this.info.operation = null;
-        
-        this.display.update(this.info);
-    },
-    
-    clear: function(value) {
-        this.info.stack[this.current] = "";
-        this.display.update(this.info);
-    },
-    
-    reset: function(value) {
-        this.info.stack = [""];
-        this.current = 0;
-        //this.operating = false;
-        this.info.operation = [];
-        
-        this.display.update(this.info);
-    },
-    
-    push: function(value) {
-        //if the user has not entered anything in, we want to duplicate the last entry
-        if ( this.info.stack[this.current] == "" && this.current > 0 )
-            this.info.stack[this.current] = this.info.stack[this.current-1];
-        this.info.stack.push("");
-        this.current = this.info.stack.length - 1;
-        
-        this.display.update(this.info);
-    },
-    
-    del: function(value) {
-        if ( this.info.stack[this.current] == "" ) {
-            if ( this.current == 0 ) return;
-            this.info.stack.splice(this.current-1, 1);
-            this.current--;
-        }
-        else this.info.stack[this.current] = this.info.stack[this.current].substring(0, this.info.stack[this.current].length-1);
-        
-        this.display.update(this.info);
-    },
-    
-    swap: function(value) {
-        if ( this.info.stack[this.current] == "" ) this.info.stack.pop();
-        global.log(this.info.stack.length);
-        if ( this.info.stack.length > 1 ) this.info.stack.push(String(this.info.stack.splice(this.info.stack.length-2,1)));
-        global.log(this.info.stack.length);
-        this.info.stack.push("");
-        this.current = this.info.stack.length - 1;
-        
-        this.display.update(this.info);
-    },
-    
-    open: function() {
-        
-    },
-    
-    close: function() {
-        
-    }
 }
 
 
