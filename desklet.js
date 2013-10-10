@@ -39,9 +39,6 @@ myDesklet.prototype = {
             
             this._bind_settings(desklet_id);
             this.setHeader(_("Calculator"));
-            this._menu.addAction(_("Settings"), function() {
-                Util.spawnCommandLine("cinnamon-settings desklets " + UUID);
-            });
             
             this._build_interface();
             
@@ -116,7 +113,7 @@ myDesklet.prototype = {
     },
     
     append: function(value) {
-        if ( value == "." && this.stack[this.current].search(".") != -1 ) return;
+        if ( value == "." && this.stack[this.current].indexOf(".") != -1 ) return;
         this.stack[this.current] += value;
         
         this.updateDisplay();
