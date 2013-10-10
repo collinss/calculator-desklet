@@ -128,26 +128,34 @@ Buffer.prototype = {
     },
     
     solve: function(value) {
-        if ( this.operations.length == 0 || this.stack[this.current] == "" ) return;
-        
-        let result;
-        let operation = this.operations.pop();
-        switch ( operation ) {
-            case "add":
-                result = String(Number(this.stack[this.current-1]) + Number(this.stack.pop()));
-                break;
-            case "sub":
-                result = String(Number(this.stack[this.current-1]) - Number(this.stack.pop()));
-                break;
-            case "mult":
-                result = String(Number(this.stack[this.current-1]) * Number(this.stack.pop()));
-                break;
-            case "div":
-                result = String(Number(this.stack[this.current-1]) / Number(this.stack.pop()));
-                break;
+        while ( this.stack.length > 1 ) {
+            for ( let i = this.operations.length; i >= 0; i++ ) {
+                if ( this.operations[i] == "(" ) this.close();
+            }
+            
         }
-        this.current--;
-        this.stack[this.current] = result;
+        
+        
+        //if ( this.operations.length == 0 || this.stack[this.current] == "" ) return;
+        //
+        //let result;
+        //let operation = this.operations.pop();
+        //switch ( operation ) {
+        //    case "add":
+        //        result = String(Number(this.stack[this.current-1]) + Number(this.stack.pop()));
+        //        break;
+        //    case "sub":
+        //        result = String(Number(this.stack[this.current-1]) - Number(this.stack.pop()));
+        //        break;
+        //    case "mult":
+        //        result = String(Number(this.stack[this.current-1]) * Number(this.stack.pop()));
+        //        break;
+        //    case "div":
+        //        result = String(Number(this.stack[this.current-1]) / Number(this.stack.pop()));
+        //        break;
+        //}
+        //this.current--;
+        //this.stack[this.current] = result;
         
         this.emit("changed");
     },
@@ -188,11 +196,76 @@ Buffer.prototype = {
     },
     
     open: function() {
+        if ( this.stack[this.current] != "" ) {
+            this.stack.push("");
+            this.operations.push("mult");
+        }
+        this.operations.push("popen");
         
+        this.emit("changed");
     },
     
     close: function() {
+        let stop = 0;
+        for ( let i = this.operations.length; i >= 0; i-- ) {
+            if ( this.operations[i] == "(" ) {
+                stop = i;
+                break;
+            }
+        }
         
+        for ( let i = this.operations.length, j = this.stack.length; i >= stop; i--, j-- ) {
+            let value = this.stack[j];
+            switch ( this.operations[i] ) {
+                case "sin":
+                    if ( this.angleMode == 0 ) value = this.stack[j] * Math.PI / 180;
+                    this.stack[j] = Math.sin(value);
+                    this.operations.splice(j, 1);
+                    break;
+                case "cos":
+                    if ( this.angleMode == 0 ) value = this.stack[j] * Math.PI / 180;
+                    this.stack[j] = Math.cos(value);
+                    this.operations.splice(j, 1);
+                    break;
+                case "tan":
+                    if ( this.angleMode == 0 ) value = this.stack[j] * Math.PI / 180;
+                    this.stack[j] = Math.tan(value);
+                    this.operations.splice(j, 1);
+                    break;
+            }
+        }
+        
+        for ( let i = this.operations.length, j = this.stack.length; i >= stop; i--, j-- ) {
+            let secondVal;
+            switch ( this.operations[i] ) {
+                case "mult":
+                    secondVal = this.stack.splice(j, 1);
+                    this.stack[j-1] = this.stack[j-1] * secondVal;
+                    this.operations.splice(i, 1);
+                    break;
+                case "div":
+                    secondVal = this.stack.splice(j, 1);
+                    this.stack[j-1] = this.stack[j-1] / secondVal;
+                    this.operations.splice(i, 1);
+                    break;
+            }
+        }
+        
+        for ( let i = this.operations.length, j = this.stack.length; i >= stop; i--, j-- ) {
+            let secondVal;
+            switch ( this.operations[i] ) {
+                case "add":
+                    secondVal = this.stack.splice(j, 1);
+                    this.stack[j-1] = this.stack[j-1] + secondVal;
+                    this.operations.splice(i, 1);
+                    break;
+                case "sub":
+                    secondVal = this.stack.splice(j, 1);
+                    this.stack[j-1] = this.stack[j-1] - secondVal;
+                    this.operations.splice(i, 1);
+                    break;
+            }
+        }
     }
 }
 Signals.addSignalMethods(Buffer.prototype);
@@ -211,8 +284,9 @@ DisplayBox.prototype = {
         this.actor.add_actor(this.valuePrev);
         let box = new St.BoxLayout({ vertical: false });
         this.actor.add_actor(box);
-        this.operation = new St.Label({ style_class: "calc-displayText-operation" });
-        box.add(this.operation, { expand: true });
+        this.operation = new St.Icon({ icon_size: 16, icon_type: St.IconType.SYMBOLIC, style_class: "calc-displayText-operation" });
+        box.add_actor(this.operation);
+        box.add(new St.BoxLayout(), { expand: true });
         this.value = new St.Label({ text: "0", style_class: "calc-displayText-primary" });
         box.add_actor(this.value);
         
@@ -229,8 +303,12 @@ DisplayBox.prototype = {
             this.value.text = value;
             if ( buffer.stack.length > 1 ) this.valuePrev.text = buffer.stack[last-1];
             else this.valuePrev.text = "";
-            if ( buffer.operations.length > 0 ) this.operation.text = buffer.operations[buffer.operations.length-1];
-            else this.operation.text = "";
+            if ( buffer.operations.length > 0 ) {
+                let file = Gio.file_new_for_path(button_path + buffer.operations[buffer.operations.length-1] + "-symbolic.svg");
+                let gicon = new Gio.FileIcon({ file: file });
+                this.operation.gicon = gicon;
+            }
+            else this.operation.set_icon_name("");
             
         } catch (e) {
             global.logError(e);
@@ -382,6 +460,9 @@ Button.prototype = {
                     
                 }
                 else {
+                    let file = Gio.file_new_for_path(button_path + "popen-symbolic.svg");
+                    let gicon = new Gio.FileIcon({ file: file });
+                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                     text = "(";
                     this.command = "open";
                 }
@@ -392,6 +473,9 @@ Button.prototype = {
                     this.command = "swap";
                 }
                 else {
+                    let file = Gio.file_new_for_path(button_path + "pclose-symbolic.svg");
+                    let gicon = new Gio.FileIcon({ file: file });
+                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                     text = ")";
                     this.command = "close";
                 }
@@ -485,12 +569,6 @@ myDesklet.prototype = {
     },
     
     _populateContextMenu: function() {
-        
-        this._menu.addAction(_("Settings"), function() {
-            Util.spawnCommandLine("cinnamon-settings desklets " + UUID);
-        });
-        
-        this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         
         this.degMenuItem = new PopupMenu.PopupMenuItem(_("Degrees"));
         this._menu.addMenuItem(this.degMenuItem);
