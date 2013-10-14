@@ -8,7 +8,8 @@ const Lang = imports.lang;
 const Signals = imports.signals;
 const Util = imports.misc.util;
 
-const UUID = "calculator@scollins";
+const GAMMA_PRECISION = 7;
+const GAMMA_CONSTANTS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
 
 const SIMPLE_LAYOUT = [
     [{type: "opt1"},              {type: "opt2"},                 {value:"%", type: "execute"}, {value:"add", type: "operate"}],
@@ -19,26 +20,61 @@ const SIMPLE_LAYOUT = [
 ]
 
 const SCIENTIFIC_LAYOUT = [
-    [{type: "opt1"},              {type: "opt2"},              {value:"inv", type: "updateInv"}, {value:"M", type: "execute"},
-        {value:"MR", type: "execute"}, {value:"MC", type: "execute"}],
-    [{type: "opt3"},              {type: "opt4"},              {value:"neg", type: "execute"}, {value:"add", type: "operate"},
-        {value:"square", type: "execute", inv:{value: "sqrt", type: "operate"}},
-        {value:"sin", type: "operate", inv:{value: "sin-inv", type: "operate"}}],
-    [{value:"7", type: "append"}, {value:"8", type: "append"}, {value:"9", type: "append"},    {value:"sub", type: "operate"},
-        {value:"root", type: "operate", inv:{value: "power", type: "operate"}},
-        {value: "cos", type: "operate", inv:{value: "cos-inv", type: "operate"}}],
-    [{value:"4", type: "append"}, {value:"5", type: "append"}, {value:"6", type: "append"},    {value:"mult", type: "operate"},
-        {value:"log", type: "operate", inv:{value: "10x", type: "operate"}},
-        {value: "tan", type: "operate", inv:{value: "tan-inv", type: "operate"}}],
-    [{value:"1", type: "append"}, {value:"2", type: "append"}, {value:"3", type: "append"},    {value:"div", type: "operate"},
-        {value:"ln", type: "operate", inv:{value: "ex", type: "operate"}},
+    [   {type: "opt1"},
+        {type: "opt2"},
+        {value: "inv", type: "updateInv"},
+        {value: "M", type: "execute"},
+        {value: "MR", type: "execute"},
+        {value: "MC", type: "execute"}],
+    [   {type: "opt3"},
+        {type: "opt4"},
+        {value: "neg", type: "execute"},
+        {value: "add", type: "operate"},
+        {value: "square", type: "execute", inv: {value: "sqrt", type: "operate"}},
+        {value: "sin", type: "operate", inv: {value: "sin-inv", type: "operate"}}],
+    [   {value: "7", type: "append"},
+        {value: "8", type: "append"},
+        {value: "9", type: "append"},
+        {value: "sub", type: "operate"},
+        {value: "power", type: "operate", inv: {value: "root", type: "operate"}},
+        {value: "cos", type: "operate", inv: {value: "cos-inv", type: "operate"}}],
+    [   {value: "4", type: "append"},
+        {value: "5", type: "append"},
+        {value: "6", type: "append"},
+        {value: "mult", type: "operate"},
+        {value: "log", type: "operate", inv: {value: "10x", type: "operate"}},
+        {value: "tan", type: "operate", inv: {value: "tan-inv", type: "operate"}}],
+    [   {value: "1", type: "append"},
+        {value: "2", type: "append"},
+        {value: "3", type: "append"},
+        {value: "div", type: "operate"},
+        {value: "ln", type: "operate", inv: {value: "ex", type: "operate"}},
         {value: "x!", type: "execute"}],
-    [{value:"0", type: "append"}, {value:".", type: "append"}, {value:"exp", type: "sci"}, {type: "return"},
-        {value:"%", type: "execute"},   {value: "pi", type: "execute"}]
+    [   {value: "0", type: "append"},
+        {value: ".", type: "append"},
+        {value: "exp", type: "sci"},
+        {type: "return"},
+        {value: "%", type: "execute"},
+        {value: "pi", type: "execute"}]
 ]
 
 
 let button_path, buffer;
+
+
+function gamma(input) {
+
+    if ( input < 0.5 ) return Math.PI / (Math.sin(Math.PI * input) * gamma(1 - input));
+    else {
+        input -= 1;
+        
+        let x = GAMMA_CONSTANTS[0];
+        for ( let i = 1; i < GAMMA_PRECISION + 2; i++ ) x += GAMMA_CONSTANTS[i] / (input + i);
+        let t = input + GAMMA_PRECISION + 0.5;
+        
+        return Math.sqrt(2 * Math.PI) * Math.pow(t, (input + 0.5)) * Math.exp(-t) * x;
+    }
+}
 
 
 function Buffer() {
@@ -52,7 +88,6 @@ Buffer.prototype = {
     
     reset: function(rpn) {
         this.stack = [""];
-        this.current = 0;
         this.operations = [];
         this.inv = false;
         this.rpn = rpn;
@@ -64,8 +99,8 @@ Buffer.prototype = {
     },
     
     append: function(value) {
-        if ( value == "." && (this.stack[this.current].indexOf(".") != -1) ) return;
-        this.stack[this.current] += value;
+        if ( value == "." && (this.stack[this.stack.length-1].indexOf(".") != -1) ) return;
+        this.stack[this.stack.length-1] += value;
         
         this.emit("changed");
     },
@@ -75,128 +110,155 @@ Buffer.prototype = {
             this.execute(value);
             return;
         }
+        let multFunc = ["sqrt", "sin", "cos", "tan", "sin-inv", "cos-inv", "tan-inv", "log", "ln", "10x", "ex"];
+        if ( this.stack[this.stack.length-1] != "" && multFunc.indexOf(value) != -1 ) this.operations.push("mult");
         this.operations.push(value);
         this.stack.push("");
-        this.current++;
         this.emit("changed");
     },
     
     execute: function(value) {
+        if ( this.rpn && this.stack[this.stack.length-1] == "" ) this.stack.pop();
+        let result;
+        
         switch ( value ) {
             case "%":
-                if ( this.rpn && this.stack[this.current] == "" ) this.stack[this.current] = String(this.stack[this.current]/100);
+                if ( this.stack[this.stack.length-1] == "" ) return;
+                result = String(this.stack.pop()/100);
                 break;
             case "neg":
-                if ( this.rpn && this.stack[this.current] == "" && this.current > 0 ) string = this.stack[this.current-1];
-                else string = this.stack[this.current];
+                string = this.stack.pop();
                 if ( string[0] == "-" ) string = string.slice(1);
                 else string = "-" + string;
-                if ( this.rpn && this.stack[this.current] == "" ) this.stack[this.current-1] = string;
-                else this.stack[this.current] = string;
+                result = string;
                 break;
             case "add":
-                if ( this.stack[this.current] == "" ) this.stack.pop();
                 if ( this.stack.length < 2 ) return;
                 result = String(Number(this.stack.pop()) + Number(this.stack.pop()));
-                this.current = this.stack.push(result, "") - 1;
                 break;
             case "sub":
-                if ( this.stack[this.current] == "" ) this.stack.pop();
+                //if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
                 if ( this.stack.length < 2 ) return;
                 last = Number(this.stack.pop());
                 result = String(Number(this.stack.pop()) - last);
-                this.current = this.stack.push(result, "") - 1;
                 break;
             case "mult":
-                if ( this.stack[this.current] == "" ) this.stack.pop();
+                //if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
                 if ( this.stack.length < 2 ) return;
                 result = String(Number(this.stack.pop()) * Number(this.stack.pop()));
-                this.current = this.stack.push(result, "") - 1;
                 break;
             case "div":
-                if ( this.stack[this.current] == "" ) this.stack.pop();
+                //if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
                 if ( this.stack.length < 2 ) return;
                 last = Number(this.stack.pop());
                 result = String(Number(this.stack.pop()) / last);
-                this.current = this.stack.push(result, "") - 1;
                 break;
             case "sin":
-                
+                angle = this.stack.pop();
+                if ( this.angleMode == 0 ) angle = angle * Math.PI / 180;
+                result = String(Math.sin(angle));
+                break;
+            case "cos":
+                angle = this.stack.pop();
+                if ( this.angleMode == 0 ) angle = angle * Math.PI / 180;
+                result = String(Math.cos(angle));
+                break;
+            case "tan":
+                angle = this.stack.pop();
+                if ( this.angleMode == 0 ) angle = angle * Math.PI / 180;
+                result = String(Math.tan(angle));
+                break;
+            case "sin-inv":
+                input = this.stack.pop();
+                result = String(Math.asin(input));
+                if ( this.angleMode == 0 ) result = result / Math.PI * 180;
+                break;
+            case "cos-inv":
+                input = this.stack.pop();
+                result = String(Math.acos(input));
+                if ( this.angleMode == 0 ) result = result / Math.PI * 180;
+                break;
+            case "tan-inv":
+                input = this.stack.pop();
+                result = String(Math.atan(input));
+                if ( this.angleMode == 0 ) result = result / Math.PI * 180;
+                break;
+            case "square":
+                result = String(Math.pow(this.stack.pop(), 2));
+                break;
+            case "sqrt":
+                result = String(Math.sqrt(this.stack.pop()));
+                break;
+            case "power":
+                power = this.stack.pop();
+                result = String(Math.pow(this.stack.pop(), power));
+                break;
+            case "root":
+                root = this.stack.pop();
+                result = String(Math.pow(this.stack.pop(), 1/root));
+                break;
+            case "ex":
+                result = String(Math.exp(this.stack.pop()));
+                break;
+            case "ln":
+                result = String(Math.log(this.stack.pop()));
+                break;
+            case "10x":
+                result = String(Math.pow(10, this.stack.pop()));
+                break;
+            case "log":
+                result = String(Math.log(this.stack.pop())/Math.log(10));
+                break;
+            case "x!":
+                result = String(gamma(Number(this.stack.pop()) + 1));
         }
+        
+        this.stack.push(result);
+        if ( this.rpn ) this.stack.push("");
         
         this.emit("changed");
     },
     
     solve: function(value) {
-        while ( this.stack.length > 1 ) {
-            for ( let i = this.operations.length; i >= 0; i++ ) {
-                if ( this.operations[i] == "(" ) this.close();
-            }
-            
-        }
-        
-        
-        //if ( this.operations.length == 0 || this.stack[this.current] == "" ) return;
-        //
-        //let result;
-        //let operation = this.operations.pop();
-        //switch ( operation ) {
-        //    case "add":
-        //        result = String(Number(this.stack[this.current-1]) + Number(this.stack.pop()));
-        //        break;
-        //    case "sub":
-        //        result = String(Number(this.stack[this.current-1]) - Number(this.stack.pop()));
-        //        break;
-        //    case "mult":
-        //        result = String(Number(this.stack[this.current-1]) * Number(this.stack.pop()));
-        //        break;
-        //    case "div":
-        //        result = String(Number(this.stack[this.current-1]) / Number(this.stack.pop()));
-        //        break;
-        //}
-        //this.current--;
-        //this.stack[this.current] = result;
+        while ( this.stack.length > 1 ) this.close();
         
         this.emit("changed");
     },
     
     clear: function(value) {
-        this.stack[this.current] = "";
+        this.stack[this.stack.length-1] = "";
         this.emit("changed");
     },
     
     push: function(value) {
         //if the user has not entered anything in, we want to duplicate the last entry
-        if ( this.stack[this.current] == "" && this.current > 0 )
-            this.stack[this.current] = this.stack[this.current-1];
+        if ( this.stack[this.stack.length-1] == "" && this.stack.length-1 > 0 )
+            this.stack[this.stack.length-1] = this.stack[this.stack.length-2];
         this.stack.push("");
-        this.current = this.stack.length - 1;
         
         this.emit("changed");
     },
     
     del: function(value) {
-        if ( this.stack[this.current] == "" ) {
-            if ( this.current == 0 ) return;
-            this.stack.splice(this.current-1, 1);
-            this.current--;
+        if ( this.stack[this.stack.length-1] == "" ) {
+            if ( this.stack.length-1 == 0 ) return;
+            this.stack.splice(this.stack.length-2, 1);
         }
-        else this.stack[this.current] = this.stack[this.current].substring(0, this.stack[this.current].length-1);
+        else this.stack[this.stack.length-1] = this.stack[this.stack.length-1].substring(0, this.stack[this.stack.length-1].length-1);
         
         this.emit("changed");
     },
     
     swap: function(value) {
-        if ( this.stack[this.current] == "" ) this.stack.pop();
+        if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
         if ( this.stack.length > 1 ) this.stack.push(String(this.stack.splice(this.stack.length-2,1)));
         this.stack.push("");
-        this.current = this.stack.length - 1;
         
         this.emit("changed");
     },
     
     open: function() {
-        if ( this.stack[this.current] != "" ) {
+        if ( this.stack[this.stack.length-1] != "" ) {
             this.stack.push("");
             this.operations.push("mult");
         }
@@ -208,64 +270,71 @@ Buffer.prototype = {
     close: function() {
         let stop = 0;
         for ( let i = this.operations.length; i >= 0; i-- ) {
-            if ( this.operations[i] == "(" ) {
+            if ( this.operations[i] == "popen" ) {
                 stop = i;
                 break;
             }
         }
         
-        for ( let i = this.operations.length, j = this.stack.length; i >= stop; i--, j-- ) {
+        for ( let i = this.operations.length-1, j = this.stack.length-1; i >= stop; i--, j-- ) {
             let value = this.stack[j];
             switch ( this.operations[i] ) {
                 case "sin":
-                    if ( this.angleMode == 0 ) value = this.stack[j] * Math.PI / 180;
-                    this.stack[j] = Math.sin(value);
-                    this.operations.splice(j, 1);
+                    if ( this.angleMode == 0 ) value = value * Math.PI / 180;
+                    this.stack[j] = String(Math.sin(value));
+                    this.operations.splice(i, 1);
                     break;
                 case "cos":
-                    if ( this.angleMode == 0 ) value = this.stack[j] * Math.PI / 180;
-                    this.stack[j] = Math.cos(value);
-                    this.operations.splice(j, 1);
+                    if ( this.angleMode == 0 ) value = value * Math.PI / 180;
+                    this.stack[j] = String(Math.cos(value));
+                    this.operations.splice(i, 1);
                     break;
                 case "tan":
-                    if ( this.angleMode == 0 ) value = this.stack[j] * Math.PI / 180;
-                    this.stack[j] = Math.tan(value);
-                    this.operations.splice(j, 1);
+                    if ( this.angleMode == 0 ) value = value * Math.PI / 180;
+                    this.stack[j] = String(Math.tan(value));
+                    this.operations.splice(i, 1);
                     break;
+                case "sqrt":
+                    this.stack[j] = String(Math.sqrt(value));
+                    this.operations.splice(i, 1);
             }
         }
         
-        for ( let i = this.operations.length, j = this.stack.length; i >= stop; i--, j-- ) {
+        for ( let i = this.operations.length-1, j = this.stack.length-1; i >= stop; i--, j-- ) {
             let secondVal;
             switch ( this.operations[i] ) {
                 case "mult":
                     secondVal = this.stack.splice(j, 1);
-                    this.stack[j-1] = this.stack[j-1] * secondVal;
+                    this.stack[j-1] = String(this.stack[j-1] * secondVal);
                     this.operations.splice(i, 1);
                     break;
                 case "div":
                     secondVal = this.stack.splice(j, 1);
-                    this.stack[j-1] = this.stack[j-1] / secondVal;
+                    this.stack[j-1] = String(this.stack[j-1] / secondVal);
                     this.operations.splice(i, 1);
                     break;
             }
         }
         
-        for ( let i = this.operations.length, j = this.stack.length; i >= stop; i--, j-- ) {
+        for ( let i = this.operations.length-1, j = this.stack.length-1; i >= stop; i--, j-- ) {
             let secondVal;
             switch ( this.operations[i] ) {
                 case "add":
                     secondVal = this.stack.splice(j, 1);
-                    this.stack[j-1] = this.stack[j-1] + secondVal;
+                    this.stack[j-1] = String(Number(this.stack[j-1]) + Number(secondVal));
                     this.operations.splice(i, 1);
                     break;
                 case "sub":
                     secondVal = this.stack.splice(j, 1);
-                    this.stack[j-1] = this.stack[j-1] - secondVal;
+                    this.stack[j-1] = String(this.stack[j-1] - secondVal);
                     this.operations.splice(i, 1);
                     break;
             }
         }
+        
+        this.operations.pop();
+        
+        this.emit("changed");
     }
 }
 Signals.addSignalMethods(Buffer.prototype);
@@ -523,7 +592,9 @@ Button.prototype = {
     
     execute: function() {
         try {
+            
             if ( this.command ) buffer[this.command]();
+            else if ( this.info.inv && buffer.inv ) buffer[this.info.inv.type](this.info.inv.value);
             else buffer[this.info.type](this.info.value);
             
         } catch(e) {
@@ -544,9 +615,9 @@ myDesklet.prototype = {
         try {
             
             this.metadata = metadata;
-            Desklet.Desklet.prototype._init.call(this, metadata);
+            Desklet.Desklet.prototype._init.call(this, metadata, desklet_id);
             
-            this._bind_settings(desklet_id);
+            this._bind_settings();
             
             this._populateContextMenu();
             
@@ -561,8 +632,8 @@ myDesklet.prototype = {
         }
     },
     
-    _bind_settings: function(instanceId) {
-        this.settings = new Settings.DeskletSettings(this, UUID, instanceId);
+    _bind_settings: function() {
+        this.settings = new Settings.DeskletSettings(this, this.metadata["uuid"], this.instance_id);
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "angleMode", "angleMode", this.setAngleMode);
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "rpn", "rpn", this._build_interface);
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "layout", "layout", this._build_interface);
