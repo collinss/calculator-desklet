@@ -12,7 +12,7 @@ const GAMMA_PRECISION = 7;
 const GAMMA_CONSTANTS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
 
 const SIMPLE_LAYOUT = [
-    [{type: "opt1"},              {type: "opt2"},                 {value:"%", type: "execute"}, {value:"add", type: "operate"}],
+    [{type: "back"},              {type: "del"},                  {value:"%", type: "execute"}, {value:"add", type: "operate"}],
     [{value:"7", type: "append"}, {value:"8", type: "append"},    {value:"9", type: "append"},  {value:"sub", type: "operate"}],
     [{value:"4", type: "append"}, {value:"5", type: "append"},    {value:"6", type: "append"},  {value:"mult", type: "operate"}],
     [{value:"1", type: "append"}, {value:"2", type: "append"},    {value:"3", type: "append"},  {value:"div", type: "operate"}],
@@ -20,14 +20,14 @@ const SIMPLE_LAYOUT = [
 ]
 
 const SCIENTIFIC_LAYOUT = [
+    [   {type: "back"},
+        {type: "del"},
+        {type: "reset"},
+        {type: "copy"},
+        {type: "paste"},
+        {value: "inv", type: "updateInv"}],
     [   {type: "opt1"},
         {type: "opt2"},
-        {value: "inv", type: "updateInv"},
-        {value: "M", type: "execute"},
-        {value: "MR", type: "execute"},
-        {value: "MC", type: "execute"}],
-    [   {type: "opt3"},
-        {type: "opt4"},
         {value: "neg", type: "execute"},
         {value: "add", type: "operate"},
         {value: "square", type: "execute", inv: {value: "sqrt", type: "operate"}},
@@ -52,7 +52,7 @@ const SCIENTIFIC_LAYOUT = [
         {value: "x!", type: "execute"}],
     [   {value: "0", type: "append"},
         {value: ".", type: "append"},
-        {value: "exp", type: "sci"},
+        {value: "exp", type: "append"},
         {type: "return"},
         {value: "%", type: "execute"},
         {value: "pi", type: "execute"}]
@@ -95,12 +95,21 @@ Buffer.prototype = {
     
     updateInv: function() {
         this.inv = !this.inv;
-        this.emit("inv-changed");
+        this.emit("status-changed");
+    },
+    
+    updateAngleMode: function(angleMode) {
+        this.angleMode = angleMode;
+        this.emit("status-changed");
     },
     
     append: function(value) {
         if ( value == "." && (this.stack[this.stack.length-1].indexOf(".") != -1) ) return;
-        this.stack[this.stack.length-1] += value;
+        if ( value == "exp") {
+            if ( this.stack[this.stack.length-1].indexOf("e+") != -1 ) return;
+            this.stack[this.stack.length-1] += "e+";
+        }
+        else this.stack[this.stack.length-1] += value;
         
         this.emit("changed");
     },
@@ -137,21 +146,44 @@ Buffer.prototype = {
                 result = String(Number(this.stack.pop()) + Number(this.stack.pop()));
                 break;
             case "sub":
-                //if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
                 if ( this.stack.length < 2 ) return;
                 last = Number(this.stack.pop());
                 result = String(Number(this.stack.pop()) - last);
                 break;
             case "mult":
-                //if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
                 if ( this.stack.length < 2 ) return;
                 result = String(Number(this.stack.pop()) * Number(this.stack.pop()));
                 break;
             case "div":
-                //if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
                 if ( this.stack.length < 2 ) return;
                 last = Number(this.stack.pop());
                 result = String(Number(this.stack.pop()) / last);
+                break;
+            case "square":
+                result = String(Math.pow(this.stack.pop(), 2));
+                break;
+            case "sqrt":
+                result = String(Math.sqrt(this.stack.pop()));
+                break;
+            case "power":
+                power = this.stack.pop();
+                result = String(Math.pow(this.stack.pop(), power));
+                break;
+            case "root":
+                root = this.stack.pop();
+                result = String(Math.pow(this.stack.pop(), 1/root));
+                break;
+            case "ex":
+                result = String(Math.exp(this.stack.pop()));
+                break;
+            case "ln":
+                result = String(Math.log(this.stack.pop()));
+                break;
+            case "10x":
+                result = String(Math.pow(10, this.stack.pop()));
+                break;
+            case "log":
+                result = String(Math.log(this.stack.pop())/Math.log(10));
                 break;
             case "sin":
                 angle = this.stack.pop();
@@ -183,34 +215,15 @@ Buffer.prototype = {
                 result = String(Math.atan(input));
                 if ( this.angleMode == 0 ) result = result / Math.PI * 180;
                 break;
-            case "square":
-                result = String(Math.pow(this.stack.pop(), 2));
-                break;
-            case "sqrt":
-                result = String(Math.sqrt(this.stack.pop()));
-                break;
-            case "power":
-                power = this.stack.pop();
-                result = String(Math.pow(this.stack.pop(), power));
-                break;
-            case "root":
-                root = this.stack.pop();
-                result = String(Math.pow(this.stack.pop(), 1/root));
-                break;
-            case "ex":
-                result = String(Math.exp(this.stack.pop()));
-                break;
-            case "ln":
-                result = String(Math.log(this.stack.pop()));
-                break;
-            case "10x":
-                result = String(Math.pow(10, this.stack.pop()));
-                break;
-            case "log":
-                result = String(Math.log(this.stack.pop())/Math.log(10));
-                break;
             case "x!":
                 result = String(gamma(Number(this.stack.pop()) + 1));
+                break;
+            case "pi":
+                if ( !this.rpn ) {
+                    if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
+                    else this.operations.push("mult");
+                }
+                result = String(Math.PI);
         }
         
         this.stack.push(result);
@@ -219,18 +232,18 @@ Buffer.prototype = {
         this.emit("changed");
     },
     
-    solve: function(value) {
+    solve: function() {
         while ( this.stack.length > 1 ) this.close();
         
         this.emit("changed");
     },
     
-    clear: function(value) {
+    clear: function() {
         this.stack[this.stack.length-1] = "";
         this.emit("changed");
     },
     
-    push: function(value) {
+    push: function() {
         //if the user has not entered anything in, we want to duplicate the last entry
         if ( this.stack[this.stack.length-1] == "" && this.stack.length-1 > 0 )
             this.stack[this.stack.length-1] = this.stack[this.stack.length-2];
@@ -239,19 +252,47 @@ Buffer.prototype = {
         this.emit("changed");
     },
     
-    del: function(value) {
+    back: function() {
         if ( this.stack[this.stack.length-1] == "" ) {
-            if ( this.stack.length-1 == 0 ) return;
-            this.stack.splice(this.stack.length-2, 1);
+            if ( this.rpn && this.stack.length > 1 ) {
+                this.stack.pop();
+                this.stack.pop();
+                this.stack.push("");
+            }
+            else return;
         }
-        else this.stack[this.stack.length-1] = this.stack[this.stack.length-1].substring(0, this.stack[this.stack.length-1].length-1);
+        else {
+            string = this.stack.pop();
+            if ( string.length != 0) {
+                if ( string.substr(string.length-3, 2) == "e+" ) string = string.substr(0, string.length-2);
+                else if ( isNaN( string )) string = "";
+                else string = string.substr(0, string.length-1);
+            }
+            this.stack.push(string);
+        }
         
         this.emit("changed");
     },
     
-    swap: function(value) {
+    del: function() {
+        if ( this.rpn && this.stack[this.stack.length-1] == "" ) this.stack.pop();
+        this.stack.pop();
+        this.stack.push("");
+        
+        this.emit("changed");
+    },
+    
+    swap: function() {
         if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
         if ( this.stack.length > 1 ) this.stack.push(String(this.stack.splice(this.stack.length-2,1)));
+        this.stack.push("");
+        
+        this.emit("changed");
+    },
+    
+    recip: function() {
+        if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
+        this.stack.push(String(1/this.stack.pop()));
         this.stack.push("");
         
         this.emit("changed");
@@ -335,6 +376,25 @@ Buffer.prototype = {
         this.operations.pop();
         
         this.emit("changed");
+    },
+    
+    copy: function() {
+        if ( this.rpn && this.stack[this.stack.length-1] == "" ) this.stack.pop();
+        St.Clipboard.get_default().set_text(this.stack[this.stack.length-1]);
+        if ( this.rpn ) this.stack.push("");
+    },
+    
+    paste: function() {
+        St.Clipboard.get_default().get_text(Lang.bind(this, function(cb, text) {
+            if ( !isNaN(text) ) return;
+            if ( !this.rpn && this.stack[this.stack.length-1] != "" ) return;
+            if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
+            
+            this.stack.push(text);
+            if ( this.rpn ) this.stack.push("");
+        }));
+        
+        this.emit("changed");
     }
 }
 Signals.addSignalMethods(Buffer.prototype);
@@ -349,17 +409,26 @@ DisplayBox.prototype = {
         
         this.actor = new St.BoxLayout({ vertical: true, style_class: "calc-displayWindow" });
         
+        //top line
+        let topBox = new St.BoxLayout({ vertical: false });
+        this.actor.add_actor(topBox);
+        this.status = new St.Label({ style_class: "calc-displayText-status" });
+        topBox.add_actor(this.status);
+        topBox.add(new St.BoxLayout(), { expand: true });
         this.valuePrev = new St.Label({ style_class: "calc-displayText-secondary" });
-        this.actor.add_actor(this.valuePrev);
-        let box = new St.BoxLayout({ vertical: false });
-        this.actor.add_actor(box);
+        topBox.add_actor(this.valuePrev);
+        
+        //bottom line
+        let bottomBox = new St.BoxLayout({ vertical: false });
+        this.actor.add_actor(bottomBox);
         this.operation = new St.Icon({ icon_size: 16, icon_type: St.IconType.SYMBOLIC, style_class: "calc-displayText-operation" });
-        box.add_actor(this.operation);
-        box.add(new St.BoxLayout(), { expand: true });
+        bottomBox.add_actor(this.operation);
+        bottomBox.add(new St.BoxLayout(), { expand: true });
         this.value = new St.Label({ text: "0", style_class: "calc-displayText-primary" });
-        box.add_actor(this.value);
+        bottomBox.add_actor(this.value);
         
         buffer.connect("changed", Lang.bind(this, this.update));
+        buffer.connect("status-changed", Lang.bind(this, this.onStatusChanged));
         
     },
     
@@ -379,9 +448,21 @@ DisplayBox.prototype = {
             }
             else this.operation.set_icon_name("");
             
+            this.onStatusChanged();
+            
         } catch (e) {
             global.logError(e);
         }
+    },
+    
+    onStatusChanged: function() {
+        let text;
+        if ( buffer.angleMode == 0 ) text = "deg";
+        else text = "rad";
+        
+        if ( buffer.inv ) text += " inv";
+        
+        this.status.text = text;
     }
 }
 
@@ -494,60 +575,54 @@ Button.prototype = {
         let type = info.type;
         let text, command;
         switch ( type ) {
+            case "back":
+                this.command = "back";
+                file = Gio.file_new_for_path(button_path + "delete-symbolic.svg");
+                gicon = new Gio.FileIcon({ file: file });
+                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                break;
+            case "del":
+                this.command = "del";
+                text = "del";
+                this.image;
+                break;
+            case "reset":
+                this.command = "reset";
+                file = Gio.file_new_for_path(button_path + "reset-symbolic.svg");
+                gicon = new Gio.FileIcon({ file: file });
+                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                break;
+            case "copy":
+                this.command = "copy";
+                this.image = new St.Icon({ icon_name: "edit-copy", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                break;
+            case "paste":
+                this.command = "paste";
+                this.image = new St.Icon({ icon_name: "edit-paste", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                break;
             case "opt1":
                 if ( rpn ) {
-                    let file = Gio.file_new_for_path(button_path + "delete-symbolic.svg");
-                    let gicon = new Gio.FileIcon({ file: file });
-                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    this.command = "del";
-                }
-                else {
-                this.image = new St.Icon({ icon_name: "edit-clear", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    this.command = "clear";
-                }
-                break;
-            case "opt2":
-                //this.image = new St.Icon({ icon_name: "view-refresh", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                this.command = "reset";
-                if ( rpn ) {
-                let file = Gio.file_new_for_path(button_path + "reset-symbolic.svg");
-                let gicon = new Gio.FileIcon({ file: file });
-                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    
-                }
-                else {
-                    text = _("Reset");
-                }
-                break;
-            case "opt3":
-                if ( rpn ) {
-                    let file = Gio.file_new_for_path(button_path + "swap-symbolic.svg");
-                    let gicon = new Gio.FileIcon({ file: file });
-                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    text = _("Swap");
+                    file = Gio.file_new_for_path(button_path + "swap-symbolic.svg");
                     this.command = "swap";
-                    
                 }
                 else {
-                    let file = Gio.file_new_for_path(button_path + "popen-symbolic.svg");
-                    let gicon = new Gio.FileIcon({ file: file });
-                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    text = "(";
+                    file = Gio.file_new_for_path(button_path + "popen-symbolic.svg");
                     this.command = "open";
                 }
+                gicon = new Gio.FileIcon({ file: file });
+                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                 break;
-            case "opt4":
+            case "opt2":
                 if ( rpn ) {
-                    text = "";
-                    this.command = "swap";
+                    file = Gio.file_new_for_path(button_path + "recip-symbolic.svg");
+                    this.command = "recip";
                 }
                 else {
-                    let file = Gio.file_new_for_path(button_path + "pclose-symbolic.svg");
-                    let gicon = new Gio.FileIcon({ file: file });
-                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    text = ")";
+                    file = Gio.file_new_for_path(button_path + "pclose-symbolic.svg");
                     this.command = "close";
                 }
+                gicon = new Gio.FileIcon({ file: file });
+                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
                 break;
             case "return":
                 if ( rpn ) {
@@ -617,7 +692,7 @@ myDesklet.prototype = {
             this.metadata = metadata;
             Desklet.Desklet.prototype._init.call(this, metadata, desklet_id);
             
-            this._bind_settings();
+            this._bindSettings();
             
             this._populateContextMenu();
             
@@ -625,18 +700,19 @@ myDesklet.prototype = {
             
             buffer = new Buffer();
             
-            this._build_interface();
+            this._buildInterface();
+            this.setAngleMode(this.angleMode);
             
         } catch(e) {
             global.logError(e);
         }
     },
     
-    _bind_settings: function() {
+    _bindSettings: function() {
         this.settings = new Settings.DeskletSettings(this, this.metadata["uuid"], this.instance_id);
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "angleMode", "angleMode", this.setAngleMode);
-        this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "rpn", "rpn", this._build_interface);
-        this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "layout", "layout", this._build_interface);
+        this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "rpn", "rpn", this._buildInterface);
+        this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "layout", "layout", this._buildInterface);
     },
     
     _populateContextMenu: function() {
@@ -663,7 +739,7 @@ myDesklet.prototype = {
         this._menu.addMenuItem(this.rpnMenuItem);
         this.rpnMenuItem.connect("activate", Lang.bind(this, function() {
             this.rpn = !this.rpn;
-            this._build_interface();
+            this._buildInterface();
         }))
         
         this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
@@ -672,19 +748,19 @@ myDesklet.prototype = {
         this._menu.addMenuItem(this.layoutFFMenuItem);
         this.layoutFFMenuItem.connect("activate", Lang.bind(this, function() {
             this.layout = 1;
-            this._build_interface();
+            this._buildInterface();
         }));
         
         this.layoutSciMenuItem = new PopupMenu.PopupMenuItem("Scientific");
         this._menu.addMenuItem(this.layoutSciMenuItem);
         this.layoutSciMenuItem.connect("activate", Lang.bind(this, function() {
             this.layout = 2;
-            this._build_interface();
+            this._buildInterface();
         }));
         
     },
     
-    _build_interface: function() {
+    _buildInterface: function() {
         if ( this.mainBox ) this.mainBox.destroy();
         
         buffer.reset(this.rpn);
@@ -736,6 +812,7 @@ myDesklet.prototype = {
     setAngleMode: function() {
         this.degMenuItem.setShowDot(this.angleMode == 0);
         this.radMenuItem.setShowDot(this.angleMode == 1);
+        buffer.updateAngleMode(this.angleMode);
     },
 }
 

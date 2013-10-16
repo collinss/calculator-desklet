@@ -49,6 +49,11 @@
     color: #555;
 }
 
+.calc-displayText-status {
+    font-size: 8px;
+    color: #555;
+}
+
 .calc-displayText-rpn {
     color: #555;
 }
