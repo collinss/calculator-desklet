@@ -8,6 +8,10 @@
     /*color: blue;*/
 }
 
+.calc-button-padding {
+    padding: 3px;
+}
+
 .calc-mainBox {
     padding: 5px;
 }

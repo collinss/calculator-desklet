@@ -14,9 +14,9 @@
    width="16"
    version="1.1"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname=".-symbolic.svg">
+   sodipodi:docname="object-flip-horizontal-symbolic.svg">
   <defs
-     id="defs10" />
+     id="defs11" />
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -26,17 +26,17 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1026"
-     inkscape:window-height="622"
-     id="namedview8"
+     inkscape:window-width="640"
+     inkscape:window-height="480"
+     id="namedview9"
      showgrid="false"
-     inkscape:zoom="5.2149125"
-     inkscape:cx="-15.400423"
-     inkscape:cy="15.19562"
-     inkscape:window-x="58"
-     inkscape:window-y="75"
+     inkscape:zoom="14.75"
+     inkscape:cx="8"
+     inkscape:cy="8"
+     inkscape:window-x="0"
+     inkscape:window-y="26"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg7384" />
+     inkscape:current-layer="layer12" />
   <metadata
      id="metadata90">
     <rdf:RDF>
@@ -52,12 +52,16 @@
   <title
      id="title9167">Gnome Symbolic Icon Theme</title>
   <g
-     style="font-size:13.66111565px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Rekha;-inkscape-font-specification:Rekha Medium"
-     id="text3001"
-     transform="matrix(1.0221447,0,0,1.102313,1.8346482,-1.5001956)">
+     id="layer12"
+     transform="translate(-241 -667)">
     <path
-       d="m 6.7655311,13.154336 -1.4675026,0 0,-1.360775 1.4675026,0 0,1.360775"
-       id="path2985"
+       id="path15405"
+       style="text-indent:0;text-transform:none;block-progression:tb;color:#000000;fill:#bebebe"
+       d="m 244,674 v 2 h 12.23729 v -2 H 244 z"
        inkscape:connector-curvature="0" />
+    <path
+       id="rect3217-6-2-2-4-85-5-2"
+       style="block-progression:tb;text-indent:0;color:#bebebe;text-transform:none;fill:#bebebe"
+       d="m247 671v1c0 0.25689-0.12983 0.52846-0.3125 0.71875l-2.28 2.28 2.2812 2.2812c0.18267 0.19029 0.3125 0.46186 0.3125 0.71875v1h-1c-0.30945 0-0.55232-0.0903-0.75-0.28125l-3.66-3.72 3.66-3.72c0.2-0.19 0.44-0.28 0.75-0.28z" />
   </g>
 </svg>

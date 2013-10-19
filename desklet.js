@@ -12,7 +12,7 @@ const GAMMA_PRECISION = 7;
 const GAMMA_CONSTANTS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
 
 const SIMPLE_LAYOUT = [
-    [{type: "back"},              {type: "del"},                  {value:"%", type: "execute"}, {value:"add", type: "operate"}],
+    [{value: "back"},             {value: "del"},                 {value:"%", type: "execute"}, {value:"add", type: "operate"}],
     [{value:"7", type: "append"}, {value:"8", type: "append"},    {value:"9", type: "append"},  {value:"sub", type: "operate"}],
     [{value:"4", type: "append"}, {value:"5", type: "append"},    {value:"6", type: "append"},  {value:"mult", type: "operate"}],
     [{value:"1", type: "append"}, {value:"2", type: "append"},    {value:"3", type: "append"},  {value:"div", type: "operate"}],
@@ -20,42 +20,42 @@ const SIMPLE_LAYOUT = [
 ]
 
 const SCIENTIFIC_LAYOUT = [
-    [   {type: "back"},
-        {type: "del"},
-        {type: "reset"},
-        {type: "copy"},
-        {type: "paste"},
-        {value: "inv", type: "updateInv"}],
+    [   {type: "cmd",     value: "back"},
+        {type: "cmd",     value: "del"},
+        {type: "cmd",     value: "reset"},
+        {type: "cmd",     value: "copy"},
+        {type: "cmd",     value: "paste"},
+        {type: "cmd",     value: "invUp",  inv: {type: "cmd",     value: "invDown"}}],
     [   {type: "opt1"},
         {type: "opt2"},
-        {value: "neg", type: "execute"},
-        {value: "add", type: "operate"},
-        {value: "square", type: "execute", inv: {value: "sqrt", type: "operate"}},
-        {value: "sin", type: "operate", inv: {value: "sin-inv", type: "operate"}}],
-    [   {value: "7", type: "append"},
-        {value: "8", type: "append"},
-        {value: "9", type: "append"},
-        {value: "sub", type: "operate"},
-        {value: "power", type: "operate", inv: {value: "root", type: "operate"}},
-        {value: "cos", type: "operate", inv: {value: "cos-inv", type: "operate"}}],
-    [   {value: "4", type: "append"},
-        {value: "5", type: "append"},
-        {value: "6", type: "append"},
-        {value: "mult", type: "operate"},
-        {value: "log", type: "operate", inv: {value: "10x", type: "operate"}},
-        {value: "tan", type: "operate", inv: {value: "tan-inv", type: "operate"}}],
-    [   {value: "1", type: "append"},
-        {value: "2", type: "append"},
-        {value: "3", type: "append"},
-        {value: "div", type: "operate"},
-        {value: "ln", type: "operate", inv: {value: "ex", type: "operate"}},
-        {value: "x!", type: "execute"}],
-    [   {value: "0", type: "append"},
-        {value: ".", type: "append"},
-        {value: "exp", type: "append"},
+        {type: "execute", value: "neg"},
+        {type: "operate", value: "add"},
+        {type: "execute", value: "square", inv: {type: "operate", value: "sqrt"}},
+        {type: "operate", value: "sin",    inv: {type: "operate", value: "sin-inv"}}],
+    [   {type: "append",  value: "7"},
+        {type: "append",  value: "8"},
+        {type: "append",  value: "9"},
+        {type: "operate", value: "sub"},
+        {type: "operate", value: "power",  inv: {type: "operate", value: "root"}},
+        {type: "operate", value: "cos",    inv: {type: "operate", value: "cos-inv"}}],
+    [   {type: "append",  value: "4"},
+        {type: "append",  value: "5"},
+        {type: "append",  value: "6"},
+        {type: "operate", value: "mult"},
+        {type: "operate", value: "log",    inv: {type: "operate", value: "10x"}},
+        {type: "operate", value: "tan",    inv: {type: "operate", value: "tan-inv"}}],
+    [   {type: "append",  value: "1"},
+        {type: "append",  value: "2"},
+        {type: "append",  value: "3"},
+        {type: "operate", value: "div"},
+        {type: "operate", value: "ln",     inv: {type: "operate", value: "ex"}},
+        {type: "execute", value: "x!"}],
+    [   {type: "append",  value: "0"},
+        {type: "append",  value: "."},
+        {type: "append",  value: "exp"},
         {type: "return"},
-        {value: "%", type: "execute"},
-        {value: "pi", type: "execute"}]
+        {type: "execute", value: "%"},
+        {type: "execute", value: "pi"}]
 ]
 
 
@@ -93,9 +93,14 @@ Buffer.prototype = {
         this.rpn = rpn;
     },
     
-    updateInv: function() {
-        this.inv = !this.inv;
-        this.emit("status-changed");
+    invUp: function() {
+        this.inv = true;
+        this.emit("inv-changed");
+    },
+    
+    invDown: function() {
+        this.inv = false;
+        this.emit("inv-changed");
     },
     
     updateAngleMode: function(angleMode) {
@@ -429,6 +434,9 @@ DisplayBox.prototype = {
         
         buffer.connect("changed", Lang.bind(this, this.update));
         buffer.connect("status-changed", Lang.bind(this, this.onStatusChanged));
+        buffer.connect("inv-changed", Lang.bind(this, this.onStatusChanged));
+        
+        this.update();
         
     },
     
@@ -568,95 +576,42 @@ function Button(info, rpn) {
 Button.prototype = {
     _init: function(info, rpn) {
         
-        this.info = info;
-        
-        this.actor = new St.Button({ style_class: "calc-button" });
-        
-        let type = info.type;
-        let text, command;
-        switch ( type ) {
-            case "back":
-                this.command = "back";
-                file = Gio.file_new_for_path(button_path + "delete-symbolic.svg");
-                gicon = new Gio.FileIcon({ file: file });
-                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                break;
-            case "del":
-                this.command = "del";
-                text = "del";
-                this.image;
-                break;
-            case "reset":
-                this.command = "reset";
-                file = Gio.file_new_for_path(button_path + "reset-symbolic.svg");
-                gicon = new Gio.FileIcon({ file: file });
-                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                break;
-            case "copy":
-                this.command = "copy";
-                this.image = new St.Icon({ icon_name: "edit-copy", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                break;
-            case "paste":
-                this.command = "paste";
-                this.image = new St.Icon({ icon_name: "edit-paste", icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                break;
+        switch ( info.type ) {
             case "opt1":
-                if ( rpn ) {
-                    file = Gio.file_new_for_path(button_path + "swap-symbolic.svg");
-                    this.command = "swap";
-                }
-                else {
-                    file = Gio.file_new_for_path(button_path + "popen-symbolic.svg");
-                    this.command = "open";
-                }
-                gicon = new Gio.FileIcon({ file: file });
-                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                if ( rpn ) this.info = {type: "cmd", value: "swap"};
+                else this.info = {type: "cmd", value: "open"};
                 break;
             case "opt2":
-                if ( rpn ) {
-                    file = Gio.file_new_for_path(button_path + "recip-symbolic.svg");
-                    this.command = "recip";
-                }
-                else {
-                    file = Gio.file_new_for_path(button_path + "pclose-symbolic.svg");
-                    this.command = "close";
-                }
-                gicon = new Gio.FileIcon({ file: file });
-                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+                if ( rpn ) this.info = {type: "cmd", value: "recip"};
+                else this.info = {type: "cmd", value: "close"};
                 break;
             case "return":
-                if ( rpn ) {
-                    let file = Gio.file_new_for_path(button_path + "return-symbolic.svg");
-                    let gicon = new Gio.FileIcon({ file: file });
-                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    this.command = "push";
-                }
-                else {
-                    let file = Gio.file_new_for_path(button_path + "equal-symbolic.svg");
-                    let gicon = new Gio.FileIcon({ file: file });
-                    this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                    this.command = "solve";
-                }
+                if ( rpn ) this.info = {type: "cmd", value: "push"};
+                else this.info = {type: "cmd", value: "solve"};
                 break;
             default:
-                let file = Gio.file_new_for_path(button_path + info.value + "-symbolic.svg");
-                let gicon = new Gio.FileIcon({ file: file });
-                this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
-                text = info.value;
+                this.info = info;
+                break;
         }
         
-        if ( info.inv ) {
-            this.infoInv = info.inv;
+        this.actor = new St.BoxLayout({ style_class: "calc-button-padding" });
+        this.button = new St.Button({ style_class: "calc-button" });
+        this.actor.add_actor(this.button);
+        
+        file = Gio.file_new_for_path(button_path + this.info.value + "-symbolic.svg");
+        gicon = new Gio.FileIcon({ file: file });
+        this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
+        this.button.add_actor(this.image);
+        
+        if ( this.info.inv ) {
+            this.infoInv = this.info.inv;
             buffer.connect("inv-changed", Lang.bind(this, this.refresh));
             let file = Gio.file_new_for_path(button_path + this.infoInv.value + "-symbolic.svg");
             let gicon = new Gio.FileIcon({ file: file });
             this.imageInv = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
         }
         
-        if ( this.image ) this.actor.add_actor(this.image);
-        else this.actor.label = text;
-        
-        this.actor.connect("clicked", Lang.bind(this, this.execute));
+        this.button.connect("clicked", Lang.bind(this, this.execute));
         
     },
     
@@ -668,9 +623,12 @@ Button.prototype = {
     execute: function() {
         try {
             
-            if ( this.command ) buffer[this.command]();
-            else if ( this.info.inv && buffer.inv ) buffer[this.info.inv.type](this.info.inv.value);
-            else buffer[this.info.type](this.info.value);
+            let info;
+            if ( this.info.inv && buffer.inv ) info = this.infoInv;
+            else info = this.info;
+            
+            if ( info.type == "cmd" ) buffer[info.value]();
+            else buffer[info.type](info.value);
             
         } catch(e) {
             global.logError(e);
@@ -793,8 +751,8 @@ myDesklet.prototype = {
         displayArea.add_actor(this.display.actor);
         
         let buttonTable = new Clutter.TableLayout();
-        buttonTable.set_row_spacing(5);
-        buttonTable.set_column_spacing(5);
+        //buttonTable.set_row_spacing(5);
+        //buttonTable.set_column_spacing(5);
         let buttonBox = new Clutter.Actor();
         buttonBox.set_layout_manager(buttonTable);
         this.mainBox.add_actor(buttonBox);
