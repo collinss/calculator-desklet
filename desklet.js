@@ -91,6 +91,8 @@ Buffer.prototype = {
         this.operations = [];
         this.inv = false;
         this.rpn = rpn;
+        
+        this.emit("changed");
     },
     
     invUp: function() {
@@ -616,8 +618,8 @@ Button.prototype = {
     },
     
     refresh: function() {
-        if ( buffer.inv ) this.actor.set_child(this.imageInv);
-        else this.actor.set_child(this.image);
+        if ( buffer.inv ) this.button.set_child(this.imageInv);
+        else this.button.set_child(this.image);
     },
     
     execute: function() {
