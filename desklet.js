@@ -126,7 +126,7 @@ Buffer.prototype = {
             this.execute(value);
             return;
         }
-        let multFunc = ["sqrt", "sin", "cos", "tan", "sin-inv", "cos-inv", "tan-inv", "log", "ln", "10x", "ex"];
+        let multFunc = ["sqrt", "root", "sin", "cos", "tan", "sin-inv", "cos-inv", "tan-inv", "log", "ln", "10x", "ex"];
         if ( this.stack[this.stack.length-1] != "" && multFunc.indexOf(value) != -1 ) this.operations.push("mult");
         this.operations.push(value);
         this.stack.push("");
@@ -342,9 +342,43 @@ Buffer.prototype = {
                     this.stack[j] = String(Math.tan(value));
                     this.operations.splice(i, 1);
                     break;
+                case "sin-inv":
+                    angle = Math.asin(value);
+                    if ( this.angleMode == 0 ) angle = angle / Math.PI * 180;
+                    this.stack[j] = String(angle);
+                    break;
+                case "cos-inv":
+                    angle = Math.acos(value);
+                    if ( this.angleMode == 0 ) angle = angle / Math.PI * 180;
+                    this.stack[j] = String(angle);
+                    break;
+                case "tan-inv":
+                    angle = Math.atan(value);
+                    if ( this.angleMode == 0 ) angle = angle / Math.PI * 180;
+                    this.stack[j] = String(angle);
+                    break;
                 case "sqrt":
                     this.stack[j] = String(Math.sqrt(value));
                     this.operations.splice(i, 1);
+                    break;
+                case "root":
+                    this.stack[j] = String(Math.pow(this.stack.splice(j,1), 1/this.stack[j-1]));
+                    this.operations.splice(i, 1);
+                    break;
+                case "log":
+                    this.stack[j] = String(Math.log(this.stack[j])/Math.log(10));
+                    this.operations.splice(i, 1);
+                    break;
+                case "ln":
+                    this.stack[j] = String(Math.log(this.stack[j]));
+                    this.operations.splice(i, 1);
+                    break;
+                case "ex":
+                    
+                    break;
+                case "10x":
+                    
+                    break;
             }
         }
         
