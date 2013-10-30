@@ -83,7 +83,7 @@ function Buffer() {
 
 Buffer.prototype = {
     _init: function() {
-        //this.reset();
+        
     },
     
     reset: function(rpn) {
@@ -209,18 +209,21 @@ Buffer.prototype = {
                 break;
             case "sin-inv":
                 input = this.stack.pop();
-                result = String(Math.asin(input));
+                result = Math.asin(input);
                 if ( this.angleMode == 0 ) result = result / Math.PI * 180;
+                result = String(result);
                 break;
             case "cos-inv":
                 input = this.stack.pop();
-                result = String(Math.acos(input));
+                result = Math.acos(input);
                 if ( this.angleMode == 0 ) result = result / Math.PI * 180;
+                result = String(result);
                 break;
             case "tan-inv":
                 input = this.stack.pop();
-                result = String(Math.atan(input));
+                result = Math.atan(input);
                 if ( this.angleMode == 0 ) result = result / Math.PI * 180;
+                result = String(result);
                 break;
             case "x!":
                 result = String(gamma(Number(this.stack.pop()) + 1));
