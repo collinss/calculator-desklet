@@ -14,7 +14,7 @@
    width="16"
    version="1.1"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="pi-symbolic.svg">
+   sodipodi:docname="exp-symbolic.svg">
   <defs
      id="defs10" />
   <sodipodi:namedview
@@ -26,15 +26,15 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1026"
+     inkscape:window-width="1022"
      inkscape:window-height="622"
      id="namedview8"
      showgrid="false"
      inkscape:zoom="14.75"
-     inkscape:cx="9.9182261"
+     inkscape:cx="3.581187"
      inkscape:cy="5.1256096"
-     inkscape:window-x="62"
-     inkscape:window-y="43"
+     inkscape:window-x="0"
+     inkscape:window-y="26"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg7384" />
   <metadata
@@ -52,20 +52,15 @@
   <title
      id="title9167">Gnome Symbolic Icon Theme</title>
   <g
-     transform="scale(0.63834015,1.5665629)"
-     style="font-size:10.50760078px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Saab;-inkscape-font-specification:Saab"
+     style="font-size:13.7173481px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Rekha;-inkscape-font-specification:Rekha Medium"
      id="text3001">
     <path
-       d="m 3.1331257,1.2766798 4.8433473,0 0,0.872213 -3.806953,0 0,2.2677537 3.6479024,0 0,0.8722129 -3.6479024,0 0,2.7756895 3.8993049,0 0,0.872213 -4.9356992,0 0,-7.6600821"
-       style="font-family:Saab;-inkscape-font-specification:Saab"
-       id="path3468" />
+       d="m 0.46904305,2.9795033 6.32284015,0 0,1.138647 -4.9698595,0 0,2.9604824 4.7622239,0 0,1.1386471 -4.7622239,0 0,3.6235772 5.0904221,0 0,1.138647 -6.44340275,0 0,-10.0000007"
+       style="font-weight:normal;font-family:Pothana2000;-inkscape-font-specification:Pothana2000"
+       id="path3013" />
     <path
-       d="m 9.413059,1.2766798 1.113354,0 1.903477,2.8475188 1.913738,-2.8475188 1.113354,0 -2.462719,3.6786864 2.6269,3.9813957 -1.113354,0 -2.154879,-3.257972 -2.170271,3.257972 -1.1184852,0 L 11.798818,4.8476223 9.413059,1.2766798"
-       style="font-family:Saab;-inkscape-font-specification:Saab"
-       id="path3470" />
-    <path
-       d="m 18.022315,2.1283701 0,2.8783028 1.303188,0 c 0.482279,3.9e-6 0.855107,-0.1248421 1.118485,-0.3745385 0.26337,-0.2496878 0.395057,-0.6054135 0.395061,-1.0671782 -4e-6,-0.4583335 -0.131691,-0.812349 -0.395061,-1.0620476 C 20.18061,2.253223 19.807782,2.1283769 19.325503,2.1283701 l -1.303188,0 m -1.036395,-0.8516903 2.339583,0 c 0.858527,7.7e-6 1.506701,0.1949728 1.944522,0.5848958 0.441232,0.3865167 0.66185,0.9543097 0.661856,1.7033806 -6e-6,0.7559225 -0.220624,1.3271359 -0.661856,1.7136419 -0.437821,0.3865133 -1.085995,0.5797682 -1.944522,0.5797651 l -1.303188,0 0,3.0783987 -1.036395,0 0,-7.6600821"
-       style="font-family:Saab;-inkscape-font-specification:Saab"
-       id="path3472" />
+       d="m 9.1495526,2.9795033 6.3228404,0 0,1.138647 -4.96986,0 0,2.9604824 4.762224,0 0,1.1386471 -4.762224,0 0,3.6235772 5.090422,0 0,1.138647 -6.4434024,0 0,-10.0000007"
+       style="font-weight:normal;font-family:Pothana2000;-inkscape-font-specification:Pothana2000"
+       id="path3015" />
   </g>
 </svg>

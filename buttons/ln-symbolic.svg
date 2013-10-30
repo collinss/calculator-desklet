@@ -26,17 +26,17 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1026"
+     inkscape:window-width="1022"
      inkscape:window-height="622"
      id="namedview8"
      showgrid="false"
      inkscape:zoom="14.75"
-     inkscape:cx="-1.9125728"
+     inkscape:cx="-2.7118644"
      inkscape:cy="5.1256096"
-     inkscape:window-x="100"
-     inkscape:window-y="30"
+     inkscape:window-x="0"
+     inkscape:window-y="26"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg7384" />
+     inkscape:current-layer="g2985" />
   <metadata
      id="metadata90">
     <rdf:RDF>
@@ -54,13 +54,19 @@
   <g
      style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Meera;-inkscape-font-specification:Meera"
      id="text3001">
-    <path
-       d="m 5.1464844,11.75 0,-7.5 0.8671875,0 0,7.5 -0.8671875,0"
-       style="font-family:Meera;-inkscape-font-specification:Meera"
-       id="path3267" />
-    <path
-       d="m 10.103516,11.75 0,-3.7617188 C 10.103511,7.6289104 9.9921832,7.3476607 9.7695313,7.1445312 9.5468712,6.9414111 9.2558558,6.8398487 8.8964844,6.8398437 8.3769504,6.8398487 7.9746071,7.0429735 7.6894531,7.4492187 7.4433576,7.8007852 7.3203109,8.2402379 7.3203125,8.7675781 l 0,2.9824219 -0.7558594,0 0,-5.3847656 0.6855469,0 0,1.0839843 C 7.7812479,6.6210989 8.4160129,6.2070368 9.1542969,6.2070312 c 0.499996,5.6e-6 0.9042921,0.1152399 1.2128911,0.3457032 0.324213,0.2578174 0.486322,0.6210983 0.486328,1.0898437 l 0,4.1074219 -0.75,0"
-       style="font-family:Meera;-inkscape-font-specification:Meera"
-       id="path3269" />
+    <g
+       id="g2985"
+       transform="translate(-1.3316412,1.75)">
+      <path
+         inkscape:connector-curvature="0"
+         id="path3267"
+         style="font-family:Meera;-inkscape-font-specification:Meera"
+         d="m 4.6466412,11.75 0,-11 1.271875,0 0,11 -1.271875,0" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path3269"
+         style="font-family:Meera;-inkscape-font-specification:Meera"
+         d="m 12.416798,11.75 0,-5.5171876 c -8e-6,-0.5270771 -0.163289,-0.9395767 -0.489845,-1.2375 -0.326568,-0.2979095 -0.753391,-0.4468676 -1.280469,-0.446875 -0.7619828,7.4e-6 -1.3520863,0.2979238 -1.7703122,0.89375 -0.36094,0.5156309 -0.5414086,1.1601615 -0.5414061,1.9335938 l 0,4.3742188 -1.1085939,0 0,-7.8976563 1.0054689,0 0,1.5898437 c 0.7791635,-1.2145757 1.7101521,-1.8218668 2.7929683,-1.821875 0.733328,8.2e-6 1.326295,0.1690185 1.778908,0.5070313 0.475512,0.3781323 0.713272,0.9109443 0.713281,1.5984375 l 0,6.0242188 -1.1,0" />
+    </g>
   </g>
 </svg>

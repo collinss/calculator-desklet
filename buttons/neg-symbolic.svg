@@ -26,16 +26,16 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1026"
-     inkscape:window-height="622"
+     inkscape:window-width="1024"
+     inkscape:window-height="688"
      id="namedview8"
      showgrid="false"
      inkscape:zoom="14.75"
-     inkscape:cx="-1.0140852"
-     inkscape:cy="3.007317"
-     inkscape:window-x="339"
+     inkscape:cx="16.498676"
+     inkscape:cy="12.329118"
+     inkscape:window-x="0"
      inkscape:window-y="26"
-     inkscape:window-maximized="0"
+     inkscape:window-maximized="1"
      inkscape:current-layer="svg7384" />
   <metadata
      id="metadata90">
@@ -52,29 +52,46 @@
   <title
      id="title9167">Gnome Symbolic Icon Theme</title>
   <g
-     transform="scale(1.1850303,0.84386027)"
-     style="font-size:16.8772049px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Saab;-inkscape-font-specification:Saab"
-     id="text3001">
-    <path
-       d="m 3.2650143,15.405394 -0.7334332,0 7.7051689,-11.8503035 0.733434,0 -7.7051697,11.8503035"
-       style=""
-       id="path2995" />
-  </g>
-  <g
      style="font-size:10.57851315px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Rekha;-inkscape-font-specification:Rekha Medium"
-     id="text3001-5">
-    <path
-       d="m 4.7789258,4.2210744 2.2210746,0 0,0.5578513 -2.2210746,0 0,2.2210745 -0.5578512,0 0,-2.2210745 -2.2210746,0 0,-0.5578513 2.2210746,0 0,-2.2210745 0.5578512,0 0,2.2210745"
-       style=""
-       id="path2992" />
-  </g>
+     id="text3001-5"
+     transform="translate(3.1864407,12.610169)" />
   <g
-     transform="scale(1.3266499,0.75377838)"
+     transform="matrix(1.3266499,0,0,1.4890968,1.4999997,-8.73061)"
      style="font-size:14.03398323px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Rekha;-inkscape-font-specification:Rekha Medium"
      id="text3001-5-7">
     <path
        d="m 10.176008,14.593148 -3.7688916,0 0,-0.671548 3.7688916,0 0,0.671548"
-       style=""
-       id="path2989" />
+       id="path2989"
+       inkscape:connector-curvature="0" />
   </g>
+  <g
+     id="g3792"
+     transform="translate(-9.3813561,-3.4152538)">
+    <g
+       id="text3001-5-7-8"
+       style="font-size:14.03398323px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Rekha;-inkscape-font-specification:Rekha Medium"
+       transform="matrix(1.3266499,0,0,1.4890968,1.8813558,-14.315356)">
+      <path
+         inkscape:connector-curvature="0"
+         id="path2989-9"
+         d="m 10.176008,14.593148 -3.7688916,0 0,-0.671548 3.7688916,0 0,0.671548" />
+    </g>
+    <g
+       id="text3001-5-7-5"
+       style="font-size:14.03398323px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#bebebe;fill-opacity:1;stroke:none;font-family:Rekha;-inkscape-font-specification:Rekha Medium"
+       transform="matrix(0,1.3266499,-1.4890968,0,34.111966,-4.0847462)">
+      <path
+         inkscape:connector-curvature="0"
+         id="path2989-92"
+         d="m 10.176008,14.593148 -3.7688916,0 0,-0.671548 3.7688916,0 0,0.671548" />
+    </g>
+  </g>
+  <rect
+     style="fill:#bebebe;fill-opacity:1;stroke:none"
+     id="rect3798"
+     width="16"
+     height="1"
+     x="-8"
+     y="10.813709"
+     transform="matrix(0.70710678,-0.70710678,0.70710678,0.70710678,0,0)" />
 </svg>
