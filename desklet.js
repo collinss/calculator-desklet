@@ -62,6 +62,18 @@ const SCIENTIFIC_LAYOUT = [
 let button_path, buffer;
 
 
+function factorial(input) {
+    if ( input >= 0 && input % 1 == 0 ) {
+        let result = 1;
+        for ( let i = input; i > 0; i-- ) {
+            result = result * i;
+        }
+        return result;
+    }
+    else return gamma(input+1);
+}
+
+
 function gamma(input) {
 
     if ( input < 0.5 ) return Math.PI / (Math.sin(Math.PI * input) * gamma(1 - input));
@@ -226,7 +238,7 @@ Buffer.prototype = {
                 result = String(result);
                 break;
             case "x!":
-                result = String(gamma(Number(this.stack.pop()) + 1));
+                result = String(factorial(Number(this.stack.pop())));
                 break;
             case "pi":
                 if ( !this.rpn ) {
