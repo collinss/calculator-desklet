@@ -161,20 +161,20 @@ Buffer.prototype = {
                 result = string;
                 break;
             case "add":
-                if ( this.stack.length < 2 ) return;
+                if ( this.stack.length < 2 ) break;
                 result = String(Number(this.stack.pop()) + Number(this.stack.pop()));
                 break;
             case "sub":
-                if ( this.stack.length < 2 ) return;
+                if ( this.stack.length < 2 ) break;
                 last = Number(this.stack.pop());
                 result = String(Number(this.stack.pop()) - last);
                 break;
             case "mult":
-                if ( this.stack.length < 2 ) return;
+                if ( this.stack.length < 2 ) break;
                 result = String(Number(this.stack.pop()) * Number(this.stack.pop()));
                 break;
             case "div":
-                if ( this.stack.length < 2 ) return;
+                if ( this.stack.length < 2 ) break;
                 last = Number(this.stack.pop());
                 result = String(Number(this.stack.pop()) / last);
                 break;
@@ -185,10 +185,12 @@ Buffer.prototype = {
                 result = String(Math.sqrt(this.stack.pop()));
                 break;
             case "power":
+                if ( this.stack.length < 2 ) break;
                 power = this.stack.pop();
                 result = String(Math.pow(this.stack.pop(), power));
                 break;
             case "root":
+                if ( this.stack.length < 2 ) break;
                 root = this.stack.pop();
                 result = String(Math.pow(this.stack.pop(), 1/root));
                 break;
@@ -248,7 +250,7 @@ Buffer.prototype = {
                 result = String(Math.PI);
         }
         
-        this.stack.push(result);
+        if ( result ) this.stack.push(result);
         if ( this.rpn ) this.stack.push("");
         
         this.emit("changed");
