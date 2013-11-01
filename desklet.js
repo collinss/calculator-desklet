@@ -28,7 +28,7 @@ const SCIENTIFIC_LAYOUT = [
         {type: "cmd",     value: "invUp",  inv: {type: "cmd",     value: "invDown"}}],
     [   {type: "opt1"},
         {type: "opt2"},
-        {type: "execute", value: "neg"},
+        {type: "cmd",     value: "neg"},
         {type: "operate", value: "add"},
         {type: "execute", value: "square", inv: {type: "operate", value: "sqrt"}},
         {type: "operate", value: "sin",    inv: {type: "operate", value: "sin-inv"}}],
@@ -55,7 +55,7 @@ const SCIENTIFIC_LAYOUT = [
         {type: "append",  value: "exp"},
         {type: "return"},
         {type: "execute", value: "%"},
-        {type: "execute", value: "pi"}]
+        {type: "cmd",     value: "pi"}]
 ]
 
 
@@ -101,9 +101,10 @@ Buffer.prototype = {
     reset: function(rpn) {
         this.stack = [""];
         this.operations = [];
-        this.inv = false;
+        this.invDown();
         this.rpn = rpn;
         
+global.log(this.stack);
         this.emit("changed");
     },
     
@@ -138,27 +139,34 @@ Buffer.prototype = {
             this.execute(value);
             return;
         }
-        let multFunc = ["sqrt", "root", "sin", "cos", "tan", "sin-inv", "cos-inv", "tan-inv", "log", "ln", "10x", "ex"];
-        if ( this.stack[this.stack.length-1] != "" && multFunc.indexOf(value) != -1 ) this.operations.push("mult");
+        
+        let dualFunc = ["add", "sub", "mult", "div", "power", "root"];
+        let multFunc = ["sqrt", "sin", "cos", "tan", "sin-inv", "cos-inv", "tan-inv", "log", "ln", "10x", "ex"];
+        
+        if ( this.stack[this.stack.length-1] == "" && dualFunc.indexOf(value) != -1 ) return;
+        
+        if ( multFunc.indexOf(value) != -1 ) {
+            if ( this.stack[this.stack.length-1] != "" ) {
+                this.operations.push("mult");
+                this.stack.push("");
+            }
+        }
+        else this.stack.push("");
+        
         this.operations.push(value);
-        this.stack.push("");
         this.emit("changed");
     },
     
     execute: function(value) {
+        if ( ( !this.rpn && this.stack[this.stack.length-1] == "" ) ||
+             ( this.rpn && this.stack[0] == "" ) ) return;
         if ( this.rpn && this.stack[this.stack.length-1] == "" ) this.stack.pop();
         let result;
         
         switch ( value ) {
             case "%":
-                if ( this.stack[this.stack.length-1] == "" ) return;
+                if ( this.stack[this.stack.length-1] == "" ) break;
                 result = String(this.stack.pop()/100);
-                break;
-            case "neg":
-                string = this.stack.pop();
-                if ( string[0] == "-" ) string = string.slice(1);
-                else string = "-" + string;
-                result = string;
                 break;
             case "add":
                 if ( this.stack.length < 2 ) break;
@@ -242,12 +250,6 @@ Buffer.prototype = {
             case "x!":
                 result = String(factorial(Number(this.stack.pop())));
                 break;
-            case "pi":
-                if ( !this.rpn ) {
-                    if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
-                    else this.operations.push("mult");
-                }
-                result = String(Math.PI);
         }
         
         if ( result ) this.stack.push(result);
@@ -257,7 +259,7 @@ Buffer.prototype = {
     },
     
     solve: function() {
-        while ( this.stack.length > 1 ) this.close();
+        while ( this.operations.length > 0 ) this.close();
         
         this.emit("changed");
     },
@@ -289,7 +291,7 @@ Buffer.prototype = {
             string = this.stack.pop();
             if ( string.length != 0) {
                 if ( string.substr(string.length-3, 2) == "e+" ) string = string.substr(0, string.length-2);
-                else if ( isNaN( string )) string = "";
+                else if ( isNaN( string ) ) string = "";
                 else string = string.substr(0, string.length-1);
             }
             this.stack.push(string);
@@ -378,8 +380,12 @@ Buffer.prototype = {
                     this.stack[j] = String(Math.sqrt(value));
                     this.operations.splice(i, 1);
                     break;
+                case "power":
+                    this.stack[j-1] = String(Math.pow(this.stack[j-1], this.stack.splice(j,1)));
+                    this.operations.splice(i, 1);
+                    break;
                 case "root":
-                    this.stack[j] = String(Math.pow(this.stack.splice(j,1), 1/this.stack[j-1]));
+                    this.stack[j-1] = String(Math.pow(this.stack.splice(j,1), 1/this.stack[j-1]));
                     this.operations.splice(i, 1);
                     break;
                 case "log":
@@ -391,10 +397,12 @@ Buffer.prototype = {
                     this.operations.splice(i, 1);
                     break;
                 case "ex":
-                    
+                    this.stack[j] = String(Math.exp(this.stack[j]));
+                    this.operations.splice(i, 1);
                     break;
                 case "10x":
-                    
+                    this.stack[j] = String(Math.pow(10, this.stack[j]));
+                    this.operations.splice(i, 1);
                     break;
             }
         }
@@ -431,7 +439,36 @@ Buffer.prototype = {
             }
         }
         
-        this.operations.pop();
+        if ( this.operations.length > 0 ) this.operations.pop();
+        
+        this.emit("changed");
+    },
+    
+    pi: function() {
+        if ( this.stack[this.stack.length-1] == "" ) {
+            this.stack.pop();
+            this.stack.push(String(Math.PI));
+        }
+        else {
+            this.stack.push(String(this.stack.pop()*Math.PI));
+        }
+        
+        if ( this.rpn ) this.stack.push("");
+        
+        this.emit("changed");
+    },
+    
+    neg: function() {
+        if ( this.rpn && this.stack[this.stack.length-1] == "" ) this.stack.pop();
+        
+        if ( this.stack.length > 0 ) {
+            string = this.stack.pop();
+            if ( string[0] == "-" ) string = string.slice(1);
+            else string = "-" + string;
+            this.stack.push(string);
+        }
+        
+        if ( this.rpn ) this.stack.push("");
         
         this.emit("changed");
     },
