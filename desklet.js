@@ -495,12 +495,14 @@ global.log(this.stack);
 Signals.addSignalMethods(Buffer.prototype);
 
 
-function DisplayBox() {
-    this._init();
+function DisplayBox(precision) {
+    this._init(precision);
 }
 
 DisplayBox.prototype = {
-    _init: function() {
+    _init: function(precision) {
+        
+        this.precision = precision;
         
         this.actor = new St.BoxLayout({ vertical: true, style_class: "calc-displayWindow" });
         
@@ -533,12 +535,22 @@ DisplayBox.prototype = {
     update: function() {
         try {
             
+            //primary
             let last = buffer.stack.length - 1;
             let value = buffer.stack[last];
             if ( value == "" ) value = "0";
+            else if ( value.length > this.precision ) value = String(Number(value).toPrecision(this.precision));
             this.value.text = value;
-            if ( buffer.stack.length > 1 ) this.valuePrev.text = buffer.stack[last-1];
+            
+            //secondary
+            if ( buffer.stack.length > 1 ) {
+                let prev = buffer.stack[last-1];
+                if ( prev.length > this.precision ) prev = String(Number(prev).toPrecision(this.precision));
+                this.valuePrev.text = prev;
+            }
             else this.valuePrev.text = "";
+            
+            //operation
             if ( buffer.operations.length > 0 ) {
                 let file = Gio.file_new_for_path(button_path + buffer.operations[buffer.operations.length-1] + "-symbolic.svg");
                 let gicon = new Gio.FileIcon({ file: file });
@@ -565,13 +577,14 @@ DisplayBox.prototype = {
 }
 
 
-function DisplayBoxRPN() {
-    this._init();
+function DisplayBoxRPN(precision) {
+    this._init(precision);
 }
 
 DisplayBoxRPN.prototype = {
-    _init: function() {
+    _init: function(precision) {
         
+        this.precision = precision;
         this.show = [];
         
         this.actor = new St.BoxLayout({ vertical: false, style_class: "calc-displayWindow-rpn" });
@@ -623,8 +636,9 @@ DisplayBoxRPN.prototype = {
                 let index = new St.Label({ text: j + ":", x_expand: true, style_class: "calc-displayText-rpn" });
                 row.add(index, { expand: true });
                 
-                
-                let value = new St.Label({ text: this.stack[i], style_class: "calc-displayText-rpn" });
+                let text = this.stack[i];
+                if ( text.length > this.precision ) text = String(Number(text).toPrecision(this.precision));
+                let value = new St.Label({ text: text, style_class: "calc-displayText-rpn" });
                 row.add_actor(value);
             }
             
@@ -761,6 +775,7 @@ myDesklet.prototype = {
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "angleMode", "angleMode", this.setAngleMode);
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "rpn", "rpn", this._buildInterface);
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "layout", "layout", this._buildInterface);
+        this.settings.bindProperty(Settings.BindingDirection.IN, "precision", "precision", this.setPrecision)
     },
     
     _populateContextMenu: function() {
@@ -836,8 +851,8 @@ myDesklet.prototype = {
         let displayArea = new St.BoxLayout({ vertical: true, style_class: "calc-displayArea" });
         this.mainBox.add_actor(displayArea);
         
-        if ( this.rpn ) this.display = new DisplayBoxRPN();
-        else this.display = new DisplayBox();
+        if ( this.rpn ) this.display = new DisplayBoxRPN(this.precision);
+        else this.display = new DisplayBox(this.precision);
         displayArea.add_actor(this.display.actor);
         
         let buttonTable = new Clutter.TableLayout();
@@ -862,6 +877,11 @@ myDesklet.prototype = {
         this.radMenuItem.setShowDot(this.angleMode == 1);
         buffer.updateAngleMode(this.angleMode);
     },
+    
+    setPrecision: function() {
+        this.display.precision = this.precision;
+        this.display.update();
+    }
 }
 
 

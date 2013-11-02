@@ -23,5 +23,15 @@
             "Scientific": 2
         },
         "default": 1
+    },
+    
+    "precision": {
+        "type": "spinbutton",
+        "description": "Precision",
+        "min": 6,
+        "max": 14,
+        "step": 1,
+        "default": 10,
+        "units": "digits"
     }
 }
