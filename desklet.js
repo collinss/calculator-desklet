@@ -104,7 +104,6 @@ Buffer.prototype = {
         this.invDown();
         this.rpn = rpn;
         
-global.log(this.stack);
         this.emit("changed");
     },
     
@@ -587,15 +586,22 @@ DisplayBoxRPN.prototype = {
         this.precision = precision;
         this.show = [];
         
-        this.actor = new St.BoxLayout({ vertical: false, style_class: "calc-displayWindow-rpn" });
+        this.actor = new St.BoxLayout({ vertical: true, style_class: "calc-displayWindow-rpn" });
+        
+        //status area
+        this.status = new St.Label({ style_class: "calc-displayText-status" });
+        this.actor.add_actor(this.status);
+        
+        let bottomBox = new St.BoxLayout({ vertical: false, style_class: "calc-stackArea" });
+        this.actor.add_actor(bottomBox);
         
         let displayBin = new St.Bin({ x_expand: true, x_fill: true, y_align: St.Align.END });
-        this.actor.add(displayBin, { expand: true });
+        bottomBox.add(displayBin, { expand: true });
         this.displayBox = new St.BoxLayout({ vertical: true, pack_start: true });
         displayBin.add_actor(this.displayBox);
         
         let navigationBox = new St.BoxLayout({ vertical: true, style_class: "calc-navigation-box" });
-        this.actor.add_actor(navigationBox);
+        bottomBox.add_actor(navigationBox);
         this.buttonUp = new St.Button({ style_class: "calc-navigation-button", visible: false });
         navigationBox.add_actor(this.buttonUp);
         let iconUp = new St.Icon({ icon_name: "go-up", style_class: "calc-navigation-icon" });
@@ -613,6 +619,9 @@ DisplayBoxRPN.prototype = {
         this.buttonDown.connect("clicked", Lang.bind(this, this.navigateDown));
         
         buffer.connect("changed", Lang.bind(this, function() { this.update(true); }));
+        buffer.connect("status-changed", Lang.bind(this, this.onStatusChanged));
+        buffer.connect("inv-changed", Lang.bind(this, this.onStatusChanged));
+        
     },
     
     update: function(refreshData) {
@@ -648,9 +657,21 @@ DisplayBoxRPN.prototype = {
             if ( this.end == 0 ) this.buttonUp.hide();
             else this.buttonUp.show();
             
+            this.onStatusChanged();
+            
         } catch(e) {
             global.logError(e);
         }
+    },
+    
+    onStatusChanged: function() {
+        let text;
+        if ( buffer.angleMode == 0 ) text = "deg";
+        else text = "rad";
+        text += " rpn";
+        if ( buffer.inv ) text += " inv";
+        
+        this.status.text = text;
     },
     
     navigateUp: function() {

@@ -29,7 +29,7 @@
 }
 
 .calc-displayWindow-rpn {
-    height: 85px;
+    /*height: 5px;*/
     background-color: #ffffff;
     border-width: 2px;
     border-color: #000000;
@@ -60,6 +60,11 @@
 
 .calc-displayText-rpn {
     color: #555;
+}
+
+.calc-stackArea {
+    height: 85px;
+    padding-top: 8px;
 }
 
 .calc-navigation-box {
