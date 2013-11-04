@@ -126,7 +126,8 @@ Buffer.prototype = {
         if ( value == "." && (this.stack[this.stack.length-1].indexOf(".") != -1) ) return;
         if ( value == "exp") {
             if ( this.stack[this.stack.length-1].indexOf("e+") != -1 ) return;
-            this.stack[this.stack.length-1] += "e+";
+            if ( this.stack[this.stack.length-1] == "" ) this.stack[this.stack.length-1] = "1e+"
+            else this.stack[this.stack.length-1] += "e+";
         }
         else this.stack[this.stack.length-1] += value;
         
@@ -473,6 +474,7 @@ Buffer.prototype = {
     },
     
     copy: function() {
+        if ( this.stack[0] == "" ) return;
         if ( this.rpn && this.stack[this.stack.length-1] == "" ) this.stack.pop();
         St.Clipboard.get_default().set_text(this.stack[this.stack.length-1]);
         if ( this.rpn ) this.stack.push("");
@@ -480,15 +482,15 @@ Buffer.prototype = {
     
     paste: function() {
         St.Clipboard.get_default().get_text(Lang.bind(this, function(cb, text) {
-            if ( !isNaN(text) ) return;
+            if ( isNaN(Number(text)) ) return;
             if ( !this.rpn && this.stack[this.stack.length-1] != "" ) return;
             if ( this.stack[this.stack.length-1] == "" ) this.stack.pop();
             
             this.stack.push(text);
             if ( this.rpn ) this.stack.push("");
+            
+            this.emit("changed");
         }));
-        
-        this.emit("changed");
     }
 }
 Signals.addSignalMethods(Buffer.prototype);
