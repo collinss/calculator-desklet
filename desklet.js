@@ -123,12 +123,16 @@ Buffer.prototype = {
     },
     
     append: function(value) {
-        if ( value == "." && (this.stack[this.stack.length-1].indexOf(".") != -1) ) return;
+        if ( value == "." ) {
+            if ( this.stack[this.stack.length-1].indexOf(".") != -1 ) return;
+            if ( this.stack[this.stack.length-1] == "" ) this.stack[this.stack.length-1] = "0";
+        }
         if ( value == "exp") {
             if ( this.stack[this.stack.length-1].indexOf("e+") != -1 ) return;
             if ( this.stack[this.stack.length-1] == "" ) this.stack[this.stack.length-1] = "1e+"
             else this.stack[this.stack.length-1] += "e+";
         }
+        else if ( !isNaN(value) && this.stack[this.stack.length-1] == "0" ) this.stack[this.stack.length-1] = value;
         else this.stack[this.stack.length-1] += value;
         
         this.emit("changed");
@@ -291,7 +295,7 @@ Buffer.prototype = {
             string = this.stack.pop();
             if ( string.length != 0) {
                 if ( string.substr(string.length-3, 2) == "e+" ) string = string.substr(0, string.length-2);
-                else if ( isNaN( string ) ) string = "";
+                else if ( isNaN( string ) || string.search("Infinity") != -1 ) string = "";
                 else string = string.substr(0, string.length-1);
             }
             this.stack.push(string);
