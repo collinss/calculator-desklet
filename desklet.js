@@ -1,6 +1,7 @@
 const Desklet = imports.ui.desklet;
 const PopupMenu = imports.ui.popupMenu;
 const Settings = imports.ui.settings;
+const Tooltips = imports.ui.tooltips;
 const Clutter = imports.gi.Clutter;
 const Gio = imports.gi.Gio;
 const St = imports.gi.St;
@@ -12,23 +13,38 @@ const GAMMA_PRECISION = 7;
 const GAMMA_CONSTANTS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
 
 const SIMPLE_LAYOUT = [
-    [{value: "back"},             {value: "del"},                 {value:"%", type: "execute"}, {value:"add", type: "operate"}],
-    [{value:"7", type: "append"}, {value:"8", type: "append"},    {value:"9", type: "append"},  {value:"sub", type: "operate"}],
-    [{value:"4", type: "append"}, {value:"5", type: "append"},    {value:"6", type: "append"},  {value:"mult", type: "operate"}],
-    [{value:"1", type: "append"}, {value:"2", type: "append"},    {value:"3", type: "append"},  {value:"div", type: "operate"}],
-    [{value:"0", type: "append"}, {value:"neg", type: "execute"}, {value:".", type: "append"},  {type: "return"}]
+    [   {type: "cmd",     value: "back",  tooltip: "Back"},
+        {type: "cmd",     value: "reset", tooltip: "Reset"},
+        {type: "execute", value: "%"},
+        {type: "operate", value: "add"}],
+    [   {type: "append",  value: "7"},
+        {type: "append",  value: "8"},
+        {type: "append",  value: "9"},
+        {type: "operate", value: "sub"}],
+    [   {type: "append",  value: "4"},
+        {type: "append",  value: "5"},
+        {type: "append",  value: "6"},
+        {type: "operate", value: "mult"}],
+    [   {type: "append",  value: "1"},
+        {type: "append",  value: "2"},
+        {type: "append",  value: "3"},
+        {type: "operate", value: "div"}],
+    [   {type: "append",  value: "0"},
+        {type: "cmd",     value: "neg"},
+        {type: "append",  value: "."},
+        {type: "return"}]
 ]
 
 const SCIENTIFIC_LAYOUT = [
-    [   {type: "cmd",     value: "back"},
-        {type: "cmd",     value: "del"},
-        {type: "cmd",     value: "reset"},
-        {type: "cmd",     value: "copy"},
-        {type: "cmd",     value: "paste"},
-        {type: "cmd",     value: "invUp",  inv: {type: "cmd",     value: "invDown"}}],
+    [   {type: "cmd",     value: "back",  tooltip: "Back"},
+        {type: "cmd",     value: "del",   tooltip: "Clear entry"},
+        {type: "cmd",     value: "reset", tooltip: "Reset"},
+        {type: "cmd",     value: "copy",  tooltip: "Copy to clipboard"},
+        {type: "cmd",     value: "paste", tooltip: "Paste from clipboard"},
+        {type: "cmd",     value: "invUp", tooltip: "Inverse",  inv: {type: "cmd",     value: "invDown"}}],
     [   {type: "opt1"},
         {type: "opt2"},
-        {type: "cmd",     value: "neg"},
+        {type: "cmd",     value: "neg", tooltip: "Swap sign"},
         {type: "operate", value: "add"},
         {type: "execute", value: "square", inv: {type: "operate", value: "sqrt"}},
         {type: "operate", value: "sin",    inv: {type: "operate", value: "sin-inv"}}],
@@ -52,7 +68,7 @@ const SCIENTIFIC_LAYOUT = [
         {type: "execute", value: "x!"}],
     [   {type: "append",  value: "0"},
         {type: "append",  value: "."},
-        {type: "append",  value: "exp"},
+        {type: "append",  value: "exp", tooltip: "Scientific notation"},
         {type: "return"},
         {type: "execute", value: "%"},
         {type: "cmd",     value: "pi"}]
@@ -95,14 +111,13 @@ function Buffer() {
 
 Buffer.prototype = {
     _init: function() {
-        
+        this.rpn = false;
     },
     
-    reset: function(rpn) {
+    reset: function() {
         this.stack = [""];
         this.operations = [];
         this.invDown();
-        this.rpn = rpn;
         
         this.emit("changed");
     },
@@ -628,6 +643,8 @@ DisplayBoxRPN.prototype = {
         buffer.connect("status-changed", Lang.bind(this, this.onStatusChanged));
         buffer.connect("inv-changed", Lang.bind(this, this.onStatusChanged));
         
+        this.onStatusChanged();
+        
     },
     
     update: function(refreshData) {
@@ -709,11 +726,11 @@ Button.prototype = {
         
         switch ( info.type ) {
             case "opt1":
-                if ( rpn ) this.info = {type: "cmd", value: "swap"};
+                if ( rpn ) this.info = {type: "cmd", value: "swap", tooltip: "Swap"};
                 else this.info = {type: "cmd", value: "open"};
                 break;
             case "opt2":
-                if ( rpn ) this.info = {type: "cmd", value: "recip"};
+                if ( rpn ) this.info = {type: "cmd", value: "recip", tooltip: "Reciprocal"};
                 else this.info = {type: "cmd", value: "close"};
                 break;
             case "return":
@@ -733,6 +750,7 @@ Button.prototype = {
         gicon = new Gio.FileIcon({ file: file });
         this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
         this.button.add_actor(this.image);
+        if ( this.info.tooltip ) new Tooltips.Tooltip(this.button, _(this.info.tooltip));
         
         if ( this.info.inv ) {
             this.infoInv = this.info.inv;
@@ -853,7 +871,8 @@ myDesklet.prototype = {
     _buildInterface: function() {
         if ( this.mainBox ) this.mainBox.destroy();
         
-        buffer.reset(this.rpn);
+        buffer.rpn = this.rpn;
+        buffer.reset();
         
         let layout;
         
