@@ -37,14 +37,14 @@ const SIMPLE_LAYOUT = [
 
 const SCIENTIFIC_LAYOUT = [
     [   {type: "cmd",     value: "back",  tooltip: "Back"},
-        {type: "cmd",     value: "del",   tooltip: "Clear entry"},
+        {type: "cmd",     value: "del",   tooltip: "Clear Entry"},
         {type: "cmd",     value: "reset", tooltip: "Reset"},
-        {type: "cmd",     value: "copy",  tooltip: "Copy to clipboard"},
-        {type: "cmd",     value: "paste", tooltip: "Paste from clipboard"},
+        {type: "cmd",     value: "copy",  tooltip: "Copy to Clipboard"},
+        {type: "cmd",     value: "paste", tooltip: "Paste from Clipboard"},
         {type: "cmd",     value: "invUp", tooltip: "Inverse",  inv: {type: "cmd",     value: "invDown"}}],
     [   {type: "opt1"},
         {type: "opt2"},
-        {type: "cmd",     value: "neg", tooltip: "Swap sign"},
+        {type: "cmd",     value: "neg", tooltip: "Swap Sign"},
         {type: "operate", value: "add"},
         {type: "execute", value: "square", inv: {type: "operate", value: "sqrt"}},
         {type: "operate", value: "sin",    inv: {type: "operate", value: "sin-inv"}}],
@@ -68,7 +68,7 @@ const SCIENTIFIC_LAYOUT = [
         {type: "execute", value: "x!"}],
     [   {type: "append",  value: "0"},
         {type: "append",  value: "."},
-        {type: "append",  value: "exp", tooltip: "Scientific notation"},
+        {type: "append",  value: "exp", tooltip: "Scientific Notation"},
         {type: "return"},
         {type: "execute", value: "%"},
         {type: "cmd",     value: "pi"}]
@@ -726,7 +726,7 @@ Button.prototype = {
         
         switch ( info.type ) {
             case "opt1":
-                if ( rpn ) this.info = {type: "cmd", value: "swap", tooltip: "Swap"};
+                if ( rpn ) this.info = {type: "cmd", value: "swap", tooltip: "Swap Entries"};
                 else this.info = {type: "cmd", value: "open"};
                 break;
             case "opt2":
