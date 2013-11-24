@@ -746,8 +746,8 @@ Button.prototype = {
         this.button = new St.Button({ style_class: "calc-button" });
         this.actor.add_actor(this.button);
         
-        file = Gio.file_new_for_path(button_path + this.info.value + "-symbolic.svg");
-        gicon = new Gio.FileIcon({ file: file });
+        let file = Gio.file_new_for_path(button_path + this.info.value + "-symbolic.svg");
+        let gicon = new Gio.FileIcon({ file: file });
         this.image = new St.Icon({ gicon: gicon, icon_size: 16, icon_type: St.IconType.SYMBOLIC });
         this.button.add_actor(this.image);
         if ( this.info.tooltip ) new Tooltips.Tooltip(this.button, _(this.info.tooltip));
@@ -910,7 +910,7 @@ myDesklet.prototype = {
         
         for ( let i = 0; i < layout.length; i++ ) {
             for ( let j = 0; j < layout[i].length; j++ ) {
-                buttonInfo = layout[i][j];
+                let buttonInfo = layout[i][j];
                 if ( buttonInfo.type == "empty" ) continue;
                 let button = new Button(buttonInfo, this.rpn);
                 buttonTable.pack(button.actor, j, i);
