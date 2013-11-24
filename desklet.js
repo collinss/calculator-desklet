@@ -1,7 +1,9 @@
 const Desklet = imports.ui.desklet;
+const Main = imports.ui.main;
 const PopupMenu = imports.ui.popupMenu;
 const Settings = imports.ui.settings;
 const Tooltips = imports.ui.tooltips;
+const Cinnamon = imports.gi.Cinnamon;
 const Clutter = imports.gi.Clutter;
 const Gio = imports.gi.Gio;
 const St = imports.gi.St;
@@ -76,6 +78,8 @@ const SCIENTIFIC_LAYOUT = [
 
 
 let button_path, buffer;
+
+let desklet_raised = false;
 
 
 function factorial(input) {
@@ -786,6 +790,98 @@ Button.prototype = {
 }
 
 
+function RaisedBox() {
+    this._init();
+}
+
+RaisedBox.prototype = {
+    _init: function() {
+        try {
+            
+            this.stageEventIds = [];
+            this.playerMenuEvents = [];
+            
+            this.actor = new St.Group({ visible: false, x: 0, y: 0 });
+            Main.uiGroup.add_actor(this.actor);
+            let constraint = new Clutter.BindConstraint({ source: global.stage,
+                                                          coordinate: Clutter.BindCoordinate.POSITION | Clutter.BindCoordinate.SIZE });
+            this.actor.add_constraint(constraint);
+            
+            this._backgroundBin = new St.Bin();
+            this.actor.add_actor(this._backgroundBin);
+            let monitor = Main.layoutManager.focusMonitor;
+            this._backgroundBin.set_position(monitor.x, monitor.y);
+            this._backgroundBin.set_size(monitor.width, monitor.height);
+            
+            let stack = new Cinnamon.Stack();
+            this._backgroundBin.child = stack;
+            
+            this.eventBlocker = new Clutter.Group({ reactive: true });
+            stack.add_actor(this.eventBlocker);
+            
+            this.groupContent = new St.Bin();
+            stack.add_actor(this.groupContent);
+            
+        } catch(e) {
+            global.logError(e);
+        }
+    },
+    
+    add: function(desklet) {
+        try {
+            
+            this.desklet = desklet;
+            
+            this.groupContent.add_actor(this.desklet.actor);
+            
+            this.actor.show();
+            global.set_stage_input_mode(Cinnamon.StageInputMode.FULLSCREEN);
+            global.focus_manager.add_group(this.actor);
+            
+            this.stageEventIds.push(global.stage.connect("captured-event", Lang.bind(this, this.onStageEvent)));
+            this.stageEventIds.push(global.stage.connect("enter-event", Lang.bind(this, this.onStageEvent)));
+            this.stageEventIds.push(global.stage.connect("leave-event", Lang.bind(this, this.onStageEvent)));
+            
+        } catch(e) {
+            global.logError(e);
+        }
+    },
+    
+    remove: function() {
+        try {
+            
+            for ( let i = 0; i < this.stageEventIds.length; i++ ) global.stage.disconnect(this.stageEventIds[i]);
+            
+            if ( this.desklet ) this.groupContent.remove_actor(this.desklet.actor);
+            
+            this.actor.destroy();
+            global.set_stage_input_mode(Cinnamon.StageInputMode.NORMAL);
+            
+        } catch(e) {
+            global.logError(e);
+        }
+    },
+    
+    onStageEvent: function(actor, event) {
+        try {
+            
+            let type = event.type();
+            if ( type == Clutter.EventType.KEY_PRESS || type == Clutter.EventType.KEY_RELEASE ) return true;
+            
+            let target = event.get_source();
+            if ( target == this.desklet.actor || this.desklet.actor.contains(target) ) return false;
+            if ( type == Clutter.EventType.BUTTON_RELEASE ) this.emit("closed");
+            
+        } catch(e) {
+            global.logError(e);
+        }
+        
+        return true;
+    }
+}
+Signals.addSignalMethods(RaisedBox.prototype);
+
+
 function myDesklet(metadata, desklet_id) {
     this._init(metadata, desklet_id);
 }
@@ -821,6 +917,56 @@ myDesklet.prototype = {
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "rpn", "rpn", this._buildInterface);
         this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "layout", "layout", this._buildInterface);
         this.settings.bindProperty(Settings.BindingDirection.IN, "precision", "precision", this.setPrecision)
+        this.settings.bindProperty(Settings.BindingDirection.IN, "raiseKey", "raiseKey", this.bindKey);
+        this.bindKey();
+    },
+    
+    bindKey: function() {
+        if ( this.keyId ) Main.keybindingManager.removeHotKey(this.keyId);
+        
+        this.keyId = "calculator-raise";
+        Main.keybindingManager.addHotKey(this.keyId, this.raiseKey, Lang.bind(this, this.toggleRaise));
+    },
+    
+    toggleRaise: function() {
+        try {
+            
+            if ( desklet_raised ) this.lower();
+            else this.raise();
+            
+        } catch(e) {
+            global.logError(e);
+        }
+    },
+    
+    raise: function() {
+        
+        if ( desklet_raised || this.changingRaiseState ) return;
+        this.changingRaiseState = true;
+        
+        this._draggable.inhibit = false;
+        this.raisedBox = new RaisedBox();
+        
+        let position = this.actor.get_position();
+        this.actor.get_parent().remove_actor(this.actor);
+        this.raisedBox.add(this);
+        
+        this.raisedBox.connect("closed", Lang.bind(this, this.lower));
+        
+        desklet_raised = true;
+        this.changingRaiseState = false;
+    },
+    
+    lower: function() {
+        if ( !desklet_raised || this.changingRaiseState ) return;
+        this.changingRaiseState = true;
+        
+        if ( this.raisedBox ) this.raisedBox.remove();
+        Main.deskletContainer.addDesklet(this.actor);
+        this._draggable.inhibit = false;
+        
+        desklet_raised = false;
+        this.changingRaiseState = false;
     },
     
     _populateContextMenu: function() {
