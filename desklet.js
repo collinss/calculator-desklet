@@ -514,6 +514,10 @@ Buffer.prototype = {
             
             this.emit("changed");
         }));
+    },
+    
+    handleKeyPress: function(key) {
+        global.log(key);
     }
 }
 Signals.addSignalMethods(Buffer.prototype);
@@ -799,7 +803,7 @@ RaisedBox.prototype = {
         try {
             
             this.stageEventIds = [];
-            this.playerMenuEvents = [];
+            this.contextMenuEvents = [];
             
             this.actor = new St.Group({ visible: false, x: 0, y: 0 });
             Main.uiGroup.add_actor(this.actor);
@@ -831,16 +835,28 @@ RaisedBox.prototype = {
         try {
             
             this.desklet = desklet;
+            this.contextMenu = this.desklet._menu;
             
             this.groupContent.add_actor(this.desklet.actor);
             
             this.actor.show();
+            global.set_stage_input_mode(Cinnamon.StageInputMode.FOCUSED);
+            global.stage.set_key_focus(this.actor);
+            this.actor.grab_key_focus();
             global.set_stage_input_mode(Cinnamon.StageInputMode.FULLSCREEN);
             global.focus_manager.add_group(this.actor);
             
             this.stageEventIds.push(global.stage.connect("captured-event", Lang.bind(this, this.onStageEvent)));
             this.stageEventIds.push(global.stage.connect("enter-event", Lang.bind(this, this.onStageEvent)));
             this.stageEventIds.push(global.stage.connect("leave-event", Lang.bind(this, this.onStageEvent)));
+            this.contextMenuEvents.push(this.contextMenu.connect("activate", Lang.bind(this, function() {
+                this.emit("closed");
+            })));
+            this.contextMenuEvents.push(this.contextMenu.connect("open-state-changed", Lang.bind(this, function(menu, open) {
+                if ( !open ) {
+                    global.set_stage_input_mode(Cinnamon.StageInputMode.FULLSCREEN);
+                }
+            })));
             
         } catch(e) {
             global.logError(e);
@@ -851,6 +867,7 @@ RaisedBox.prototype = {
         try {
             
             for ( let i = 0; i < this.stageEventIds.length; i++ ) global.stage.disconnect(this.stageEventIds[i]);
+            for ( let i = 0; i < this.contextMenuEvents.length; i++ ) this.contextMenu.disconnect(this.contextMenuEvents[i]);
             
             if ( this.desklet ) this.groupContent.remove_actor(this.desklet.actor);
             
@@ -866,10 +883,16 @@ RaisedBox.prototype = {
         try {
             
             let type = event.type();
-            if ( type == Clutter.EventType.KEY_PRESS || type == Clutter.EventType.KEY_RELEASE ) return true;
+            if ( type == Clutter.EventType.KEY_RELEASE ) return true;
+            if ( type == Clutter.EventType.KEY_PRESS ) {
+                if ( event.get_key_symbol() == Clutter.KEY_Escape ) this.emit("closed");
+                else buffer.handleKeyPress(event.get_key_code());
+                return true;
+            }
             
             let target = event.get_source();
-            if ( target == this.desklet.actor || this.desklet.actor.contains(target) ) return false;
+            if ( target == this.desklet.actor || this.desklet.actor.contains(target) ||
+                 target == this.contextMenu.actor || this.contextMenu.actor.contains(target) ) return false;
             if ( type == Clutter.EventType.BUTTON_RELEASE ) this.emit("closed");
             
         } catch(e) {
