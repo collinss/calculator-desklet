@@ -1,3 +1,7 @@
+To-do
+-----
+    Add copy/paste to context menu?
+
 Wish-list
 ---------
     Other layouts (eg. statistics, programming, etc.)
@@ -12,3 +16,5 @@ Done
     Fix number precision (numbers don't always fit the display window, and sometimes vary slightly from expected value)
     Add status display to rpn display window
     Test all functions
+    Implement raise to top
+    Implement keyboard input
