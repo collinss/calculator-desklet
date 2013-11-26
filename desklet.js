@@ -516,8 +516,75 @@ Buffer.prototype = {
         }));
     },
     
-    handleKeyPress: function(key) {
-        global.log(key);
+    handleKeyPress: function(event) {
+        try {
+            
+            let symbol = event.get_key_symbol();
+            let key = event.get_key_unicode();
+            
+            if ( symbol == Clutter.KP_Enter || symbol == Clutter.Return ) {
+                if ( this.rpn ) this.push();
+                else this.solve();
+                return;
+            }
+            
+            switch ( key ) {
+                case 49:
+                    this.append("1");
+                    break;
+                case 50:
+                    this.append("2");
+                    break;
+                case 51:
+                    this.append("3");
+                    break;
+                case 52:
+                    this.append("4");
+                    break;
+                case 53:
+                    this.append("5");
+                    break;
+                case 54:
+                    this.append("6");
+                    break;
+                case 55:
+                    this.append("7");
+                    break;
+                case 56:
+                    this.append("8");
+                    break;
+                case 57:
+                    this.append("9");
+                    break;
+                case 48:
+                    this.append("0");
+                    break;
+                case 46:
+                    this.append(".");
+                    break;
+                case 43:
+                    this.operate("add");
+                    break;
+                case 45:
+                    this.operate("sub");
+                    break;
+                case 42:
+                    this.operate("mult");
+                    break;
+                case 47:
+                    this.operate("div");
+                    break;
+                case 3:
+                    this.copy();
+                    break;
+                case 22:
+                    this.paste();
+                    break;
+            }
+            
+        } catch(e) {
+            global.logError(e);
+        }
     }
 }
 Signals.addSignalMethods(Buffer.prototype);
@@ -886,7 +953,7 @@ RaisedBox.prototype = {
             if ( type == Clutter.EventType.KEY_RELEASE ) return true;
             if ( type == Clutter.EventType.KEY_PRESS ) {
                 if ( event.get_key_symbol() == Clutter.KEY_Escape ) this.emit("closed");
-                else buffer.handleKeyPress(event.get_key_code());
+                else buffer.handleKeyPress(event);
                 return true;
             }
             
