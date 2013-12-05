@@ -1,6 +1,5 @@
 To-do
 -----
-    Add copy/paste to context menu?
 
 Wish-list
 ---------
@@ -18,3 +17,4 @@ Done
     Test all functions
     Implement raise to top
     Implement keyboard input
+    Add copy/paste to context menu

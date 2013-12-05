@@ -1102,6 +1102,15 @@ myDesklet.prototype = {
             this._buildInterface();
         }));
         
+        this._menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        
+        let copyItem = new PopupMenu.PopupMenuItem(_("Copy"));
+        this._menu.addMenuItem(copyItem);
+        copyItem.connect("activate", Lang.bind(this, function() { buffer.copy(); }));
+        
+        let pasteItem = new PopupMenu.PopupMenuItem(_("Paste"));
+        this._menu.addMenuItem(pasteItem);
+        pasteItem.connect("activate", Lang.bind(this, function() { buffer.paste(); }));
     },
     
     _buildInterface: function() {
