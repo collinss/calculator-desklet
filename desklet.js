@@ -1051,6 +1051,8 @@ myDesklet.prototype = {
         if ( !desklet_raised || this.changingRaiseState ) return;
         this.changingRaiseState = true;
         
+        this._menu.close();
+        
         if ( this.raisedBox ) this.raisedBox.remove();
         Main.deskletContainer.addDesklet(this.actor);
         this._draggable.inhibit = false;
