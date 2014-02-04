@@ -22,7 +22,6 @@
 
 .calc-displayWindow {
     height: 44px;
-    background-color: #ffffff;
     border-width: 2px;
     border-color: #000000;
     padding: 10px;
@@ -30,7 +29,6 @@
 
 .calc-displayWindow-rpn {
     /*height: 5px;*/
-    background-color: #ffffff;
     border-width: 2px;
     border-color: #000000;
     padding: 10px;
